@@ -16,13 +16,8 @@ class ListAction(Question):
         )
 
     def is_location_valid(self):
-        can_access_parent_location = self.router.can_access_location(
+        if not self.router.can_access_location(
             self.parent_location, self._routing_path
-        )
-
-        if (
-            not can_access_parent_location
-            or self._current_location.list_name != self.parent_block["for_list"]
         ):
             return False
 

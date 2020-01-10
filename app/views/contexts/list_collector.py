@@ -52,7 +52,7 @@ def build_list_items_summary_context(
             if "edit_block" in list_collector_block:
                 list_item_context["edit_link"] = url_for(
                     "questionnaire.block",
-                    list_name=list_name,
+                    list_name_or_parent_block_id=list_collector_block["id"],
                     block_id=list_collector_block["edit_block"]["id"],
                     list_item_id=list_item_id,
                     return_to=return_to,
@@ -61,7 +61,7 @@ def build_list_items_summary_context(
             if "remove_block" in list_collector_block:
                 list_item_context["remove_link"] = url_for(
                     "questionnaire.block",
-                    list_name=list_name,
+                    list_name_or_parent_block_id=list_collector_block["id"],
                     block_id=list_collector_block["remove_block"]["id"],
                     list_item_id=list_item_id,
                     return_to=return_to,

@@ -1,5 +1,6 @@
 from flask import url_for
 
+from app.questionnaire.location import Location
 from app.views.handlers.question import Question
 from app.views.contexts.list_collector import build_list_collector_context
 
@@ -11,12 +12,12 @@ class ListCollector(Question):
 
     def get_next_location_url(self):
         if self._is_adding:
-            add_url = url_for(
-                "questionnaire.block",
-                list_name=self.rendered_block["for_list"],
+            redirect_location = Location(
+                section_id=self._current_location.section_id,
+                parent_block_id=self.rendered_block["id"],
                 block_id=self.rendered_block["add_block"]["id"],
             )
-            return add_url
+            return redirect_location.url()
 
         return super().get_next_location_url()
 

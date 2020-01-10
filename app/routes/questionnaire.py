@@ -211,19 +211,19 @@ def get_section(schema, questionnaire_store, section_id, list_item_id=None):
 
 
 @questionnaire_blueprint.route("<block_id>/", methods=["GET", "POST"])
-@questionnaire_blueprint.route("<list_name>/<block_id>/", methods=["GET", "POST"])
+@questionnaire_blueprint.route("<list_name_or_parent_block_id>/<block_id>/", methods=["GET", "POST"])
 @questionnaire_blueprint.route(
-    "<list_name>/<list_item_id>/<block_id>/", methods=["GET", "POST"]
+    "<list_name_or_parent_block_id>/<list_item_id>/<block_id>/", methods=["GET", "POST"]
 )
 @login_required
 @with_questionnaire_store
 @with_schema
-def block(schema, questionnaire_store, block_id, list_name=None, list_item_id=None):
+def block(schema, questionnaire_store, block_id, list_name_or_parent_block_id=None, list_item_id=None):
     try:
         block_handler = get_block_handler(
             schema=schema,
             block_id=block_id,
-            list_name=list_name,
+            list_name_or_parent_block_id=list_name_or_parent_block_id,
             list_item_id=list_item_id,
             questionnaire_store=questionnaire_store,
             language=flask_babel.get_locale().language,

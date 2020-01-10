@@ -6,7 +6,7 @@ class ListEditQuestion(ListAction):
         list_item_doesnt_exist = (
             self._current_location.list_item_id
             not in self._questionnaire_store.list_store[
-                self._current_location.list_name
+                self.parent_block["for_list"]
             ].items
         )
         if not super().is_location_valid() or list_item_doesnt_exist:

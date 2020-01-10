@@ -39,11 +39,26 @@ def get_block_handler(
     list_item_id,
     questionnaire_store,
     language,
-    list_name=None,
+    list_name_or_parent_block_id=None,
     to_list_item_id=None,
     request_args=None,
 ):
-    block = schema.get_block(block_id)
+    list_name = None
+    parent_block_id = None
+    if list_name_or_parent_block_id:
+        if list_name_or_parent_block_id in schema.get_list_names():
+            list_name = list_name_or_parent_block_id
+        else:
+            parent_block_id = list_name_or_parent_block_id
+
+    block = None
+    if parent_block_id:
+        parent_block = schema.get_block(parent_block_id)
+        if parent_block:
+            block = schema.get_block(block_id)
+    else:
+        block = schema.get_block(block_id)
+
     if not block:
         raise InvalidLocationException(
             f"block id {block_id} is not valid for this schema"
@@ -61,7 +76,7 @@ def get_block_handler(
     if not block_class:
         raise ValueError(f"block type {block_type} is not valid")
 
-    section_id = schema.get_section_id_for_block_id(block_id)
+    section_id = schema.get_section_id_for_block_id(parent_block_id or block_id)
 
     if to_list_item_id:
         location = RelationshipLocation(

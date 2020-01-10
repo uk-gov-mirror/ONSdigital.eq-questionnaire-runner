@@ -24,6 +24,7 @@ class Location:
 
     section_id: str
     block_id: Optional[str] = None
+    parent_block_id: Optional[str] = None
     list_name: Optional[str] = None
     list_item_id: Optional[str] = None
 
@@ -34,11 +35,13 @@ class Location:
     def from_dict(cls, location_dict: Mapping):
         section_id = location_dict["section_id"]
         block_id = location_dict["block_id"]
+        parent_block_id = location_dict.get("parent_block_id")
         list_item_id = location_dict.get("list_item_id")
         list_name = location_dict.get("list_name")
         return cls(
             section_id=section_id,
             block_id=block_id,
+            parent_block_id=parent_block_id,
             list_name=list_name,
             list_item_id=list_item_id,
         )
@@ -59,7 +62,7 @@ class Location:
         return url_for(
             "questionnaire.block",
             block_id=self.block_id,
-            list_name=self.list_name,
+            list_name_or_parent_block_id=self.list_name or self.parent_block_id,
             list_item_id=self.list_item_id,
             **kwargs,
         )
