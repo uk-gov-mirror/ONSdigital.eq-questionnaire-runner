@@ -31,7 +31,7 @@ jobs:
       - name: Run Travis Steps
         run: ln -sf .development.env .env
       - name: Running translation tests
-        run: python -m scripts.extract_translation_templates --test
+        run: pipenv run python -m scripts.extract_translation_templates --test
   test-schemas:
       runs-on: ubuntu-latest
       steps:
