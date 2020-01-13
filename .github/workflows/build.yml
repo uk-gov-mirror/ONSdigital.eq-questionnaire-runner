@@ -11,6 +11,8 @@ jobs:
       - uses: actions/setup-python@v1
         with:
           python-version: '3.7'
+      - name: Install apt Dependencies
+        run: sudo apt-get install libsnappy-dev libgconf-2-4 google-chrome-stable
       - name: Write App Version
         run: printf $(git rev-parse HEAD) > .application-version
       - name: Install Pipenv
