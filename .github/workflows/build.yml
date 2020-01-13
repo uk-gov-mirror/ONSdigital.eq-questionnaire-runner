@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+      - name: Write App Version
+        run: printf $(git rev-parse HEAD) > .application-version
+      - name: Install Pipenv
+        run: pip install pipenv==2018.11.26
+      - name: Cache virtualenv
+        uses: actions/cache@v1
+        with:
+            path: ~/.local/share/virtualenvs/
+            key: ${{ runner.os }}-virtualenvs-${{ hashFiles('Pipfile.lock') }}
+      - name: Install Virtual Environment
+        run: pipenv install --dev
+      - name: Load Schemas
+        run: ./scripts/load_schemas.sh
+      - name: Load Templates
+        run: ./scripts/load_templates.sh
+      - name: Run Travis Steps
+        run: ln -sf .development.env .env && pipenv run ./scripts/run_travis.sh
