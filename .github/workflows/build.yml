@@ -29,4 +29,14 @@ jobs:
       - name: Load Templates
         run: ./scripts/load_templates.sh
       - name: Run Travis Steps
-        run: ln -sf .development.env .env && pipenv run ./scripts/run_travis.sh
+        run: ln -sf .development.env .env
+      - name: Running translation tests
+        run: python -m scripts.extract_translation_templates --test
+  test-schemas:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Load Schemas
+          run: ./scripts/load_schemas.sh
+        - name: Running schema tests
+          run: ./scripts/test_schemas.sh
