@@ -28,14 +28,17 @@ jobs:
         with:
           node-version: '8.16.0'
       - name: Get yarn cache
-        id: yarn-cache
+        id: get-yarn-cache
         run: echo "::set-output name=dir::$(yarn cache dir)"
       - name: Cache yarn modules
+        id: cache-yarn
         uses: actions/cache@v1
         with:
-          path: ${{ steps.yarn-cache.outputs.dir }}
+          path: ${{ steps.get-yarn-cache.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-      - run: yarn
+      - name: Install yarn deps
+        if: steps.cache-yarn.outputs.cache-hit != 'true'
+        run: yarn
   test-unit:
     needs: python-dependencies
     runs-on: ubuntu-latest
@@ -97,21 +100,21 @@ jobs:
         - name: Install Pipenv
           run: pip install pipenv==2018.11.26
         - name: Get yarn cache
-          id: yarn-cache
+          id: get-yarn-cache
           run: echo "::set-output name=dir::$(yarn cache dir)"
         - name: Cache yarn modules
           uses: actions/cache@v1
           id: cache-yarn
           with:
-            path: ${{ steps.yarn-cache.outputs.dir }}
+            path: ${{ steps.get-yarn-cache.outputs.dir }}
             key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
         - name: Cache virtualenv
           uses: actions/cache@v1
           with:
             path: ~/.local/share/virtualenvs/
             key: ${{ runner.os }}-virtualenvs-${{ hashFiles('Pipfile.lock') }}
-        - name: Install yarn
-          if: steps.cache-virtualenv.outputs.cache-hit != 'true'
+        - name: Install yarn deps
+          if: steps.cache-yarn.outputs.cache-hit != 'true'
           run: yarn
         - name: Functional tests spec lint
           run: ./scripts/lint_functional_test_specs.sh
