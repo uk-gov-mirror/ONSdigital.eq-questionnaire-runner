@@ -59,6 +59,6 @@ jobs:
         - name: Docker compose
           run: docker-compose --version && docker-compose up --build -d
         - name: Functional Tests
-          run: pipenv ./scripts/run_tests_functional.sh
+          run: ./scripts/run_tests_functional.sh
         - name: Docker Compose Shutdown
           run: docker-compose kill
