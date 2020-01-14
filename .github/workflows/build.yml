@@ -31,6 +31,8 @@ jobs:
         run: ./scripts/load_schemas.sh
       - name: Load Templates
         run: ./scripts/load_templates.sh
+      - name: Compile Translations
+        run: make translate
       - name: Run Travis Steps
         run: ln -sf .development.env .env
       - name: Running translation tests
