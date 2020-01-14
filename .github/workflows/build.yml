@@ -37,6 +37,7 @@ jobs:
         run: pipenv run python -m scripts.extract_translation_templates --test
       - name: Running lint tests
         run: pipenv run ./scripts/run_lint.sh
+      - run: npm install
       - name: Running unit tests
         run: pipenv run ./scripts/run_tests_unit.sh
   test-schemas:
