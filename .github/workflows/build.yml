@@ -4,16 +4,13 @@ on:
   push
 
 jobs:
-  build:
+  test-unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v1
         with:
           python-version: '3.7'
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '8.16.0'
       - name: Install apt Dependencies
         run: sudo apt-get install libsnappy-dev libgconf-2-4 google-chrome-stable
       - name: Write App Version
@@ -37,7 +34,6 @@ jobs:
         run: ln -sf .development.env .env
       - name: Running translation tests
         run: pipenv run python -m scripts.extract_translation_templates --test
-      - run: yarn
       - name: Running lint tests
         run: pipenv run ./scripts/run_lint.sh
       - name: Running unit tests
@@ -50,3 +46,19 @@ jobs:
           run: ./scripts/load_schemas.sh
         - name: Running schema tests
           run: ./scripts/test_schemas.sh
+  test-functional:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-node@v1
+          with:
+            node-version: '8.16.0'
+        - run: yarn
+        - name: Javascript Linting Check
+          run: yarn lint
+        - name: Docker compose
+          run: docker-compose --version && docker-compose up --build -d
+        - name: Functional Tests
+          run: pipenv ./scripts/run_tests_functional.sh
+        - name: Docker Compose Shutdown
+          run: docker-compose kill

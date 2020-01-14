@@ -36,6 +36,3 @@ display_result $? 1 "Mypy type check"
 
 black --check . --exclude node_modules
 display_result $? 1 "Python code formatting check"
-
-yarn lint
-display_result $? 1 "Javascript linting check"
