@@ -48,11 +48,13 @@ jobs:
       - name: Install Pipenv
         run: pip install pipenv==2018.11.26
       - name: Cache virtualenv
+        id: cache-virtualenv
         uses: actions/cache@v1
         with:
             path: ~/.local/share/virtualenvs/
             key: ${{ runner.os }}-virtualenvs-${{ hashFiles('Pipfile.lock') }}
       - name: Install Virtual Environment
+        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
         run: pipenv install --dev
       - name: Load Schemas
         run: ./scripts/load_schemas.sh
