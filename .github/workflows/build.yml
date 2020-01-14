@@ -11,6 +11,9 @@ jobs:
       - uses: actions/setup-python@v1
         with:
           python-version: '3.7'
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '8.16.0'
       - name: Install apt Dependencies
         run: sudo apt-get install libsnappy-dev libgconf-2-4 google-chrome-stable
       - name: Write App Version
@@ -32,6 +35,10 @@ jobs:
         run: ln -sf .development.env .env
       - name: Running translation tests
         run: pipenv run python -m scripts.extract_translation_templates --test
+      - name: Running lint tests
+        run: pipenv run ./scripts/run_lint.sh
+      - name: Running unit tests
+        run: pipenv run ./scripts/run_tests_unit.sh
   test-schemas:
       runs-on: ubuntu-latest
       steps:
