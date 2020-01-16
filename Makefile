@@ -5,10 +5,10 @@ clean:
 	rm -rf schemas/ga
 
 load-schemas:
-	pipenv run ./scripts/load_schemas.sh
+	./scripts/load_schemas.sh
 
 load-templates:
-	pipenv run ./scripts/load_templates.sh
+	./scripts/load_templates.sh
 
 load: load-schemas load-templates
 
@@ -38,6 +38,9 @@ test-translation-templates:
 
 translate:
 	pipenv run pybabel compile -d app/translations
+
+run-validator:
+	pipenv run ./scripts/run_validator.sh
 
 run: build
 	ln -sf .development.env .env
