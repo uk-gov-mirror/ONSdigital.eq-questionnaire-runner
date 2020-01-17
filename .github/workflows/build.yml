@@ -68,8 +68,6 @@ jobs:
       - name: Install Virtual Environment
         if: steps.cache-virtualenv.outputs.cache-hit != 'true'
         run: pipenv install --dev
-      - name: Load Schemas
-        run: ./scripts/load_schemas.sh
       - name: Load Templates
         run: ./scripts/load_templates.sh
       - name: Compile Translations
