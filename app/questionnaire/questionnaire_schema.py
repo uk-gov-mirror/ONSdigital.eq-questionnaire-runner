@@ -134,6 +134,9 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
 
         return self.get_repeating_list_for_section(section_id)
 
+    def get_child_block(self, parent_block_id, block_id):
+        return self._child_blocks.get(parent_block_id, {}).get(block_id)
+
     def is_answer_in_list_collector_block(self, answer_id):
         block = self.get_block_for_answer_id(answer_id)
 
@@ -300,6 +303,7 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
         self._sections_by_id = self._get_sections_by_id()
         self._groups_by_id = get_nested_schema_objects(self._sections_by_id, "groups")
         self._blocks_by_id = self._get_blocks_by_id()
+        self._child_blocks = self._get_child_blocks()
         self._questions_by_id = self._get_questions_by_id()
         self._answers_by_id = self._get_answers_by_id()
         self.error_messages = self._get_error_messages()
@@ -316,20 +320,23 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
             for block in group["blocks"]:
                 block["parent_id"] = group["id"]
                 blocks[block["id"]] = block
-
-                if block["type"] in ("ListCollector", "PrimaryPersonListCollector"):
-                    for nested_block_name in [
-                        "add_block",
-                        "edit_block",
-                        "remove_block",
-                        "add_or_edit_block",
-                    ]:
-                        if block.get(nested_block_name):
-                            nested_block = block[nested_block_name]
-                            nested_block["parent_id"] = block["id"]
-                            blocks[nested_block["id"]] = nested_block
-
         return blocks
+
+    def _get_child_blocks(self):
+        child_blocks = defaultdict(dict)
+        for block in self.get_blocks():
+            if block["type"] in ("ListCollector", "PrimaryPersonListCollector"):
+                for nested_block_name in [
+                    "add_block",
+                    "edit_block",
+                    "remove_block",
+                    "add_or_edit_block",
+                ]:
+                    if block.get(nested_block_name):
+                        nested_block = block[nested_block_name]
+                        nested_block["parent_id"] = block["id"]
+                        child_blocks[block["id"]][nested_block["id"]] = nested_block
+        return child_blocks
 
     def _block_for_answer(self, answer_id):
         answers = self.get_answers_by_answer_id(answer_id)

@@ -27,7 +27,7 @@ def get_form_for_location(
     if disable_mandatory:
         block_json = disable_mandatory_answers(block_json)
 
-    mapped_answers = get_mapped_answers(schema, answer_store, location=location)
+    mapped_answers = get_mapped_answers(schema, block_json, answer_store, location=location)
 
     return generate_form(
         schema,
@@ -104,7 +104,7 @@ def clear_detail_answer_field(data, question):
     return form_data
 
 
-def get_mapped_answers(schema, answer_store, location):
+def get_mapped_answers(schema, block_json, answer_store, location):
     """
     Maps the answers in an answer store to a dictionary of key, value answers.
     """
@@ -121,7 +121,7 @@ def get_mapped_answers(schema, answer_store, location):
             if relationship:
                 result = {answer.answer_id: relationship.relationship}
     else:
-        answer_ids = schema.get_answer_ids_for_block(location.block_id)
+        answer_ids = schema.get_answer_ids_for_question(block_json["question"])
         answers = answer_store.get_answers_by_answer_id(
             answer_ids=answer_ids, list_item_id=location.list_item_id
         )

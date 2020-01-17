@@ -17,7 +17,7 @@ class Question(BlockHandler):
 
     @cached_property
     def rendered_block(self):
-        return self._render_block(self.block["id"])
+        return self._render_block()
 
     def get_next_location_url(self):
         answer_action = self._get_answer_action()
@@ -36,11 +36,8 @@ class Question(BlockHandler):
         is_list_empty = not self._questionnaire_store.list_store[list_name].items
 
         if is_list_empty:
-            block_id = params["block_id"]
-            section_id = self._schema.get_section_id_for_block_id(block_id)
-
             return Location(
-                section_id=section_id, block_id=block_id, list_name=list_name
+                block_id=params["block_id"], list_name=list_name
             ).url(previous=self.current_location.block_id)
 
     def _get_answer_action(self):
@@ -102,11 +99,9 @@ class Question(BlockHandler):
             )
         return self._questionnaire_store_updater
 
-    def _render_block(self, block_id):
-        block_schema = self._schema.get_block(block_id)
-
+    def _render_block(self):
         variant_block = transform_variants(
-            block_schema,
+            self.block,
             self._schema,
             self._questionnaire_store.metadata,
             self._questionnaire_store.answer_store,

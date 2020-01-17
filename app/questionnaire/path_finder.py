@@ -41,7 +41,7 @@ class PathFinder:
         blocks: List[Mapping] = []
         path: List[Location] = []
 
-        current_location = Location(section_id=section_id, list_item_id=list_item_id)
+        current_location = Location(list_item_id=list_item_id)
         section = self.schema.get_section(section_id)
 
         for group in section["groups"]:
@@ -93,15 +93,12 @@ class PathFinder:
             if not is_skipping:
                 if repeating_list and current_location.list_item_id:
                     this_location = Location(
-                        section_id=current_location.section_id,
                         block_id=block["id"],
                         list_name=repeating_list,
                         list_item_id=current_location.list_item_id,
                     )
                 else:
-                    this_location = Location(
-                        section_id=current_location.section_id, block_id=block["id"]
-                    )
+                    this_location = Location(block_id=block["id"])
 
                 if this_location not in path:
                     path.append(this_location)
@@ -150,11 +147,7 @@ class PathFinder:
 
                 if next_precedes_current:
                     self._remove_rule_answers(rule["goto"], this_location)
-                    section_id_for_block_id = self.schema.get_section_id_for_block_id(
-                        block_id=next_block_id
-                    )
                     next_location = Location(
-                        section_id=section_id_for_block_id,
                         block_id=next_block_id,
                         list_item_id=this_location.list_item_id,
                         list_name=this_location.list_name,

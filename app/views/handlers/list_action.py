@@ -49,7 +49,6 @@ class ListAction(Question):
 
     def _get_location_url(self, block_id):
         if block_id and self._schema.is_block_valid(block_id):
-            section_id = self._schema.get_section_id_for_block_id(block_id)
-            return Location(section_id=section_id, block_id=block_id).url()
+            return Location(block_id=block_id).url()
 
         return self.parent_location.url()

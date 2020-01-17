@@ -3,6 +3,7 @@ from typing import Optional
 
 from structlog import get_logger
 
+from app.helpers.form_helper import post_form_for_block, get_form_for_location
 from app.questionnaire.location import InvalidLocationException, Location
 from app.questionnaire.placeholder_renderer import PlaceholderRenderer
 from app.questionnaire.questionnaire_store_updater import QuestionnaireStoreUpdater
@@ -13,20 +14,22 @@ logger = get_logger()
 
 class BlockHandler:
     def __init__(
-        self, schema, questionnaire_store, language, current_location, request_args
+        self, schema, questionnaire_store, language, current_location, request_args, request_method, request_form, block
     ):
         self._schema = schema
         self._questionnaire_store = questionnaire_store
         self._language = language
         self._current_location = current_location
         self._request_args = request_args or {}
-        self.block = self._schema.get_block(current_location.block_id)
+        self._request_method = request_method
+        self._request_form = request_form
+        self.block = block
 
         self._questionnaire_store_updater = None
         self._placeholder_renderer = None
         self._router = None
         self._routing_path = self._get_routing_path()
-        self.form = None
+        self._form = None
         self.page_title = None
 
         if not self.is_location_valid():
@@ -73,6 +76,12 @@ class BlockHandler:
                 metadata=self._questionnaire_store.metadata,
             )
         return self._router
+
+    @property
+    def form(self):
+        if not self._form:
+            self._form = self._generate_wtf_form()
+        return self._form
 
     def save_on_sign_out(self):
         self.questionnaire_store_updater.update_answers(self.form)
@@ -125,4 +134,25 @@ class BlockHandler:
             is_complete=self.router.is_path_complete(self._routing_path),
             section_id=location.section_id,
             list_item_id=location.list_item_id,
+        )
+
+    def _generate_wtf_form(self):
+        if self._request_method == "POST":
+            disable_mandatory = "action[save_sign_out]" in self._request_form
+            return post_form_for_block(
+                self._schema,
+                self.block,
+                self._questionnaire_store.answer_store,
+                self._questionnaire_store.metadata,
+                self._request_form,
+                self._current_location,
+                disable_mandatory,
+            )
+
+        return get_form_for_location(
+            self._schema,
+            self.block,
+            self._current_location,
+            self._questionnaire_store.answer_store,
+            self._questionnaire_store.metadata,
         )

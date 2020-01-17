@@ -228,6 +228,8 @@ def block(schema, questionnaire_store, block_id, list_name_or_parent_block_id=No
             questionnaire_store=questionnaire_store,
             language=flask_babel.get_locale().language,
             request_args=request.args,
+            request_method=request.method,
+            request_form=request.form,
         )
     except InvalidLocationException:
         return redirect(url_for(".get_questionnaire"))
@@ -241,10 +243,6 @@ def block(schema, questionnaire_store, block_id, list_name_or_parent_block_id=No
 
     if redirect_url:
         return redirect(redirect_url)
-
-    block_handler.form = _generate_wtf_form(
-        block_handler.rendered_block, schema, block_handler.current_location
-    )
 
     if request.method == "GET" or not block_handler.form.validate():
         return _render_page(
@@ -289,13 +287,12 @@ def relationship(schema, questionnaire_store, block_id, list_item_id, to_list_it
             to_list_item_id=to_list_item_id,
             questionnaire_store=questionnaire_store,
             language=flask_babel.get_locale().language,
+            request_method=request.method,
+            request_form=request.form,
         )
     except InvalidLocationException:
         return redirect(url_for(".get_questionnaire"))
 
-    block_handler.form = _generate_wtf_form(
-        block_handler.rendered_block, schema, block_handler.current_location
-    )
     if request.method == "GET" or not block_handler.form.validate():
         return _render_page(
             block_type=block_handler.block["type"],
@@ -436,26 +433,6 @@ def post_view_submission():
         return redirect(url_for("session.get_sign_out"))
 
     return redirect(url_for("post_submission.get_view_submission"))
-
-
-def _generate_wtf_form(block_schema, schema, current_location):
-    answer_store = get_answer_store(current_user)
-    metadata = get_metadata(current_user)
-
-    if request.method == "POST":
-        disable_mandatory = "action[save_sign_out]" in request.form
-        return post_form_for_block(
-            schema,
-            block_schema,
-            answer_store,
-            metadata,
-            request.form,
-            current_location,
-            disable_mandatory,
-        )
-    return get_form_for_location(
-        schema, block_schema, current_location, answer_store, metadata
-    )
 
 
 def submit_answers(schema, questionnaire_store, full_routing_path):

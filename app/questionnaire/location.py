@@ -16,13 +16,11 @@ class InvalidLocationException(Exception):
 class Location:
     """
         Store a location in the questionnaire.
-
         block_id: The id of the current block. This could be a block inside a list collector
         list_item_id: The list_item_id if this location is associated with a list
         list_name: The list name
     """
 
-    section_id: str
     block_id: Optional[str] = None
     parent_block_id: Optional[str] = None
     list_name: Optional[str] = None
@@ -33,13 +31,11 @@ class Location:
 
     @classmethod
     def from_dict(cls, location_dict: Mapping):
-        section_id = location_dict["section_id"]
         block_id = location_dict["block_id"]
         parent_block_id = location_dict.get("parent_block_id")
         list_item_id = location_dict.get("list_item_id")
         list_name = location_dict.get("list_name")
         return cls(
-            section_id=section_id,
             block_id=block_id,
             parent_block_id=parent_block_id,
             list_name=list_name,

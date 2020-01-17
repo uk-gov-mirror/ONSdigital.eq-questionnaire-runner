@@ -169,7 +169,6 @@ def _is_answer_on_path(schema, answer, routing_path):
     list_name = schema.get_repeating_list_for_section(section_id)
 
     location = Location(
-        section_id=section_id,
         block_id=block_id,
         list_item_id=answer.list_item_id,
         list_name=list_name,

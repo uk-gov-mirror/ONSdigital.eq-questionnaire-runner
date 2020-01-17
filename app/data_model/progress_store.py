@@ -123,7 +123,7 @@ class ProgressStore:
 
     def add_completed_location(self, location: Location) -> None:
 
-        section_id = location.section_id
+        section_id = schema.get_section_id_for_block_id(location.block_id)
         list_item_id = location.list_item_id
 
         completed_block_ids = self.get_completed_block_ids(section_id, list_item_id)

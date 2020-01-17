@@ -42,6 +42,8 @@ def get_block_handler(
     list_name_or_parent_block_id=None,
     to_list_item_id=None,
     request_args=None,
+    request_method=None,
+    request_form=None,
 ):
     list_name = None
     parent_block_id = None
@@ -54,8 +56,9 @@ def get_block_handler(
     block = None
     if parent_block_id:
         parent_block = schema.get_block(parent_block_id)
+        list_name = parent_block["for_list"]
         if parent_block:
-            block = schema.get_block(block_id)
+            block = schema.get_child_block(parent_block_id, block_id)
     else:
         block = schema.get_block(block_id)
 
@@ -64,7 +67,7 @@ def get_block_handler(
             f"block id {block_id} is not valid for this schema"
         )
 
-    if schema.is_block_in_repeating_section(block_id=block["id"]) and not all(
+    if not parent_block_id and schema.is_block_in_repeating_section(block_id=block["id"]) and not all(
         (list_name, list_item_id)
     ):
         raise InvalidLocationException(
@@ -85,12 +88,18 @@ def get_block_handler(
             list_item_id=list_item_id,
             to_list_item_id=to_list_item_id,
         )
+    elif parent_block_id:
+        location = Location(
+            block_id=block_id,
+            parent_block_id=parent_block_id,
+            list_name=list_name,
+            list_item_id=list_item_id,
+        )
     else:
         location = Location(
-            section_id=section_id,
             block_id=block_id,
             list_name=list_name,
             list_item_id=list_item_id,
         )
 
-    return block_class(schema, questionnaire_store, language, location, request_args)
+    return block_class(schema, questionnaire_store, language, location, request_args, request_method, request_form, block)
