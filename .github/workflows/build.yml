@@ -84,10 +84,8 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v2
-        - name: Load Schemas
-          run: ./scripts/load_schemas.sh
         - name: Running schema tests
-          run: ./scripts/test_schemas.sh
+          run: ./scripts/validate_test_schemas.sh
   test-functional:
       needs: [python-dependencies, node-dependencies]
       runs-on: ubuntu-latest
