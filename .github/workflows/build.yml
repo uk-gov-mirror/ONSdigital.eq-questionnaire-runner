@@ -145,7 +145,7 @@ jobs:
           run: docker build .
         - name: Tag
           run: |
-            export TAG=`if [ "${{ github.ref }}" == "" ]; then echo "latest"; else echo branch-$(echo ${{ git.ref }} | sed s:/:-:g); fi`
+            export TAG=`if [ "${{ github.ref }}" == "" ]; then echo "latest"; else echo branch-$(echo ${{ github.ref }} | sed s:/:-:g); fi`
             echo "::set-env name=TAG::$TAG"
             docker tag onsdigital/eq-questionnaire-runner:latest onsdigital/eq-questionnaire-runner:$TAG
         - name: Push
