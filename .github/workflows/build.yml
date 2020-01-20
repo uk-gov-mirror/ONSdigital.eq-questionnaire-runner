@@ -141,7 +141,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Build
-          run: docker build
+          run: docker build .
         - name: Tag
           run: |
             export TAG=`if [ "{{ git.ref }}" == "" ]; then echo "latest"; else echo branch-$(echo {{ git.ref }} | sed s:/:-:g); fi`
