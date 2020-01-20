@@ -150,7 +150,7 @@ jobs:
           run: docker build -t onsdigital/eq-questionnaire-runner:$TAG .
         - name: Push
           run: |
-            docker login -u ${{ secrets.DOCKER_USERNAME }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{secrets.DOCKER_PASSWORD}}
             echo "Pushing with tag [$TAG]"
             docker push onsdigital/eq-questionnaire-runner:$TAG
 
