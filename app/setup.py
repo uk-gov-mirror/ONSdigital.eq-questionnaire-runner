@@ -1,5 +1,4 @@
 import copy
-import json
 from uuid import uuid4
 
 import boto3
@@ -17,13 +16,14 @@ from google.cloud import datastore
 from htmlmin.main import minify
 from sdc.crypto.key_store import KeyStore, validate_required_keys
 from structlog import get_logger
+
 from app import settings
 from app.authentication.authenticator import login_manager
 from app.authentication.cookie_session import SHA256SecureCookieSessionInterface
 from app.authentication.user_id_generator import UserIDGenerator
 from app.globals import get_session_store
-from app.keys import KEY_PURPOSE_SUBMISSION
 from app.helpers import get_span_and_trace
+from app.keys import KEY_PURPOSE_SUBMISSION
 from app.secrets import SecretStore, validate_required_secrets
 from app.storage.datastore import DatastoreStorage
 from app.storage.dynamodb import DynamodbStorage
@@ -180,8 +180,6 @@ def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
     add_blueprints(application)
 
     login_manager.init_app(application)
-
-    add_safe_health_check(application)
 
     compress.init_app(application)
 
@@ -411,6 +409,11 @@ def add_blueprints(application):
     application.register_blueprint(schema_blueprint)
     schema_blueprint.config = application.config.copy()
 
+    from app.routes.health_check import health_check_blueprint
+
+    application.register_blueprint(health_check_blueprint)
+    health_check_blueprint.config = application.config.copy()
+
 
 def setup_secure_cookies(application):
     application.secret_key = application.eq["secret_store"].get_secret_by_name(
@@ -436,13 +439,6 @@ def setup_babel(application):
     def get_timezone():  # pylint: disable=unused-variable
         # For now regardless of locale we will show times in GMT/BST
         return "Europe/London"
-
-
-def add_safe_health_check(application):
-    @application.route("/status")
-    def safe_health_check():  # pylint: disable=unused-variable
-        data = {"status": "OK", "version": application.config["EQ_APPLICATION_VERSION"]}
-        return json.dumps(data)
 
 
 def get_minimized_asset(filename):
