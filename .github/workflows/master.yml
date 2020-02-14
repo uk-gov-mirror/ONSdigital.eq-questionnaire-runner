@@ -3,7 +3,7 @@ name: Master
 on:
   push:
     branches:
-      - master
+      - fix-master-action
 
 jobs:
   docker-push:
