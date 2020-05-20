@@ -3,6 +3,7 @@
 import logging
 import os
 import sys
+import googlecloudprofiler
 
 from structlog import configure
 from structlog.dev import ConsoleRenderer
@@ -68,11 +69,30 @@ def add_service(logger, method_name, event_dict):  # pylint: disable=unused-argu
     return event_dict
 
 
+def start_cloud_profiler():
+    # Profiler initialization. It starts a daemon thread which continuously
+    # collects and uploads profiles. Best done as early as possible.
+    try:
+        googlecloudprofiler.start(
+            service='runner',
+            service_version='1.0.1',
+            # verbose is the logging level. 0-error, 1-warning, 2-info,
+            # 3-debug. It defaults to 0 (error) if not set.
+            verbose=3,
+            # project_id must be set if not running on GCP.
+            # project_id='census-eq-mark5',
+        )
+    except (ValueError, NotImplementedError) as exc:
+        print(exc)  # Handle errors here
+
+
 # Initialise logging before the rest of the application
+start_cloud_profiler()
 configure_logging()
 from app.setup import create_app  # pylint: disable=wrong-import-position # NOQA
 
 application = create_app()
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
