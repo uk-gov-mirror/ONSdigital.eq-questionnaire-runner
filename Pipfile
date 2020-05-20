@@ -61,6 +61,7 @@ redis = "==3.2.1"
 flask-compress = "*"
 htmlmin = "*"
 coloredlogs = "*"
+google-cloud-profiler = "*"
 
 [requires]
 python_version = "3.8"

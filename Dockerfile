@@ -3,6 +3,8 @@ FROM python:3.8-slim-buster
 EXPOSE 5000
 
 RUN apt update && apt install -y curl unzip libsnappy-dev build-essential jq
+RUN apt-get update && apt-get install -y build-essential python3-pip
+RUN pip3 install google-cloud-profiler
 
 COPY . /runner
 WORKDIR /runner
