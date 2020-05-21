@@ -80,14 +80,14 @@ def start_cloud_profiler():
             # 3-debug. It defaults to 0 (error) if not set.
             verbose=1,
             # project_id must be set if not running on GCP.
-            # project_id='census-eq-mark5',
+            # project_id='',
         )
     except (ValueError, NotImplementedError) as exc:
         print(exc)  # Handle errors here
 
 
-# Initialise logging before the rest of the application
 start_cloud_profiler()
+# Initialise logging before the rest of the application
 configure_logging()
 from app.setup import create_app  # pylint: disable=wrong-import-position # NOQA
 
