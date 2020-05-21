@@ -78,17 +78,16 @@ def start_cloud_profiler():
             service_version='1.0.1',
             # verbose is the logging level. 0-error, 1-warning, 2-info,
             # 3-debug. It defaults to 0 (error) if not set.
-            verbose=3,
+            verbose=1,
             # project_id must be set if not running on GCP.
             # project_id='',
         )
     except (ValueError, NotImplementedError) as exc:
         print(exc)  # Handle errors here
 
-
-start_cloud_profiler()
 # Initialise logging before the rest of the application
 configure_logging()
+start_cloud_profiler()
 from app.setup import create_app  # pylint: disable=wrong-import-position # NOQA
 
 application = create_app()
