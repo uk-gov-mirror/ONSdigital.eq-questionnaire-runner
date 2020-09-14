@@ -13,6 +13,9 @@ googleTagManagerId: ""
 googleTagManagerAuth: ""
 googleTagManagerPreview: ""
 
+webserver:
+  workerClass: "gevent"
+
 newRelic:
   enabled: "False"
   licenseKey: ""
