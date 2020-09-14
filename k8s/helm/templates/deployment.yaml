@@ -89,6 +89,8 @@ spec:
               value: "20"
             - name: GUNICORN_KEEP_ALIVE
               value: "650"
+            - name: WEB_SERVER_WORKER_CLASS
+              value: "{{- .Values.webserver.workerClass }}"
             - name: EQ_GCS_SUBMISSION_BUCKET_ID
               value: "{{- .Values.submissionBucket }}"
             - name: EQ_GOOGLE_TAG_MANAGER_ID
