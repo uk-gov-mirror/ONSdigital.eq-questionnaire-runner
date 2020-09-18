@@ -25,7 +25,9 @@ helm upgrade --install \
     --set-string newRelic.enabled="${EQ_NEW_RELIC_ENABLED}" \
     --set-string newRelic.licenseKey="${NEW_RELIC_LICENSE_KEY}" \
     --set-string newRelic.appName="${NEW_RELIC_APP_NAME}" \
-    --set-string webserver.workerClass="${WEB_SERVER_WORKER_CLASS}"
+    --set-string webserver.workerClass="${WEB_SERVER_WORKER_CLASS}" \
+    --set-string webserver.workerThreads="${WEB_SERVER_THREADS}" \
+    --set-string webserver.type="${WEB_SERVER}"
 
 kubectl rollout restart deployment.v1.apps/runner
 kubectl rollout status deployment.v1.apps/runner
