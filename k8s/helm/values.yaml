@@ -14,6 +14,7 @@ googleTagManagerAuth: ""
 googleTagManagerPreview: ""
 
 webserver:
+  type: "gunicorn"
   workerClass: "gevent"
   workerThreads: "7"
 

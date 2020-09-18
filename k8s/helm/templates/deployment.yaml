@@ -80,7 +80,7 @@ spec:
             - name: EQ_FULFILMENT_TOPIC_ID
               value: eq-fulfilment-topic
             - name: WEB_SERVER
-              value: "gunicorn"
+              value: "{{- .Values.webserver.type }}"
             - name: WEB_SERVER_WORKERS
               value: "7"
             - name: WEB_SERVER_THREADS
