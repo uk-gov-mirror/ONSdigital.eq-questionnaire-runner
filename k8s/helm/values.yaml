@@ -15,6 +15,7 @@ googleTagManagerPreview: ""
 
 webserver:
   workerClass: "gevent"
+  workerThreads: "7"
 
 newRelic:
   enabled: "False"

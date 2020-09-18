@@ -84,7 +84,7 @@ spec:
             - name: WEB_SERVER_WORKERS
               value: "7"
             - name: WEB_SERVER_THREADS
-              value: "50"
+              value: "{{- .Values.webserver.workerThreads }}"
             - name: WEB_SERVER_ASYNC_CORES
               value: "20"
             - name: GUNICORN_KEEP_ALIVE
