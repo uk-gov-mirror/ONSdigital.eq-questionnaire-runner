@@ -1,4 +1,5 @@
 import json
+import socket
 from copy import deepcopy
 from typing import Dict
 from uuid import uuid4
@@ -281,9 +282,18 @@ def setup_datastore(application):
 
 
 def setup_redis(application):
+    # socket_keepalive_options= {}
+    # if hasattr(socket, "TCP_KEEPIDLE"):
+    #     socket_keepalive_options[socket.TCP_KEEPIDLE] = 30
+    #
+    #     logger.info("Using TCP_KEEPIDLE")
+
     redis_client = redis.Redis(
         host=application.config["EQ_REDIS_HOST"],
         port=application.config["EQ_REDIS_PORT"],
+        socket_keepalive=False,
+        health_check_interval=10
+        # socket_keepalive_options=socket_keepalive_options
     )
 
     application.eq["ephemeral_storage"] = Redis(redis_client)
