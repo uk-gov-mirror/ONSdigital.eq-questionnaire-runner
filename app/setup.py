@@ -292,7 +292,7 @@ def setup_redis(application):
         host=application.config["EQ_REDIS_HOST"],
         port=application.config["EQ_REDIS_PORT"],
         socket_keepalive=False,
-        health_check_interval=10
+        health_check_interval=30
         # socket_keepalive_options=socket_keepalive_options
     )
 
