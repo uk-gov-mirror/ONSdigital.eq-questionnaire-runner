@@ -17,6 +17,8 @@ webserver:
   type: "gunicorn"
   workerClass: "gevent"
   workerThreads: "7"
+  max_requests: "1000"
+  max_requests_jitter: "1000"
 
 newRelic:
   enabled: "False"

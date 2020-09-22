@@ -27,7 +27,9 @@ helm upgrade --install \
     --set-string newRelic.appName="${NEW_RELIC_APP_NAME}" \
     --set-string webserver.workerClass="${WEB_SERVER_WORKER_CLASS}" \
     --set-string webserver.workerThreads="${WEB_SERVER_THREADS}" \
-    --set-string webserver.type="${WEB_SERVER}"
+    --set-string webserver.type="${WEB_SERVER}" \
+    --set-string webserver.max_requests="${MAX_REQUESTS}" \
+    --set-string webserver.max_requests_jitter="${MAX_REQUESTS_JITTER}"
 
 kubectl rollout restart deployment.v1.apps/runner
 kubectl rollout status deployment.v1.apps/runner

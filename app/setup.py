@@ -1,5 +1,4 @@
 import json
-import socket
 from copy import deepcopy
 from typing import Dict
 from uuid import uuid4
