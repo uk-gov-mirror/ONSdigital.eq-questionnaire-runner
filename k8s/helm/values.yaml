@@ -39,6 +39,8 @@ ingress:
 resources:
   requests:
     cpu: ""
+  limits:
+    cpu: "3"
 
 autoscaler:
   minReplicas: ""
