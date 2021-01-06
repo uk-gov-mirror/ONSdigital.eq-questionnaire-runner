@@ -23,9 +23,9 @@ run:
       gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS
       gcloud config set project "${PROJECT_ID}"
 
-      EXPORT_OPERATION=$(gcloud datastore export --kinds="questionnaire-state" gs://"${BUCKET_NAME}" --format="value(name.scope())")
-      EXPORT_STATE=$(gcloud datastore operations describe "$EXPORT_OPERATION" --format="value(metadata.common.state.scope())")
-      TOTAL_ENTITIES_EXPORTED=$(gcloud datastore operations describe "$EXPORT_OPERATION" --format="value(metadata.progressEntities.workCompleted.scope())")
+      EXPORT_OPERATION=$(gcloud datastore export --kinds="questionnaire-state" gs://"${BUCKET_NAME}" --impersonate-service-account "concourse-eq-dev@census-ci.iam.gserviceaccount.com" --format="value(name.scope())")
+      EXPORT_STATE=$(gcloud datastore operations describe "$EXPORT_OPERATION" --impersonate-service-account "concourse-eq-dev@census-ci.iam.gserviceaccount.com" --format="value(metadata.common.state.scope())")
+      TOTAL_ENTITIES_EXPORTED=$(gcloud datastore operations describe "$EXPORT_OPERATION" --impersonate-service-account "concourse-eq-dev@census-ci.iam.gserviceaccount.com" --format="value(metadata.progressEntities.workCompleted.scope())")
 
       if [[ "$EXPORT_STATE" == "SUCCESSFUL" ]]; then
         echo "Questionnaire State Backup Successful - ${TOTAL_ENTITIES_EXPORTED:-0} entities exported" > "backup-questionnaire-state-output/notification-message"
