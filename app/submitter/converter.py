@@ -1,5 +1,8 @@
 from datetime import datetime
+
 from structlog import get_logger
+
+from app.questionnaire.questionnaire_schema import DEFAULT_LANGUAGE_CODE
 from app.submitter.convert_payload_0_0_1 import convert_answers_to_payload_0_0_1
 from app.submitter.convert_payload_0_0_3 import convert_answers_to_payload_0_0_3
 
@@ -33,8 +36,8 @@ def convert_answers(schema, questionnaire_store, routing_path, flushed=False):
         },
         'started_at': '2016-03-06T15:28:05Z',
         'submitted_at': '2016-03-07T15:28:05Z',
-        'response_id': '1234567890123456',
         'questionnaire_id': '1234567890000000',
+        'launch_language_code': 'en',
         'channel': 'RH',
         'metadata': {
           'user_id': '789473423',
@@ -55,7 +58,7 @@ def convert_answers(schema, questionnaire_store, routing_path, flushed=False):
         Data payload
     """
     metadata = questionnaire_store.metadata
-    collection_metadata = questionnaire_store.collection_metadata
+    response_metadata = questionnaire_store.response_metadata
     answer_store = questionnaire_store.answer_store
     list_store = questionnaire_store.list_store
 
@@ -72,8 +75,8 @@ def convert_answers(schema, questionnaire_store, routing_path, flushed=False):
         "submitted_at": submitted_at.isoformat(),
         "collection": _build_collection(metadata),
         "metadata": _build_metadata(metadata),
-        "response_id": metadata["response_id"],
         "questionnaire_id": metadata["questionnaire_id"],
+        "launch_language_code": metadata.get("language_code", DEFAULT_LANGUAGE_CODE),
     }
 
     if metadata.get("channel"):
@@ -84,8 +87,8 @@ def convert_answers(schema, questionnaire_store, routing_path, flushed=False):
         payload["form_type"] = metadata["form_type"]
     if metadata.get("region_code"):
         payload["region_code"] = metadata["region_code"]
-    if collection_metadata.get("started_at"):
-        payload["started_at"] = collection_metadata["started_at"]
+    if response_metadata.get("started_at"):
+        payload["started_at"] = response_metadata["started_at"]
     if metadata.get("case_id"):
         payload["case_id"] = metadata["case_id"]
     if metadata.get("case_ref"):
@@ -96,7 +99,7 @@ def convert_answers(schema, questionnaire_store, routing_path, flushed=False):
             "answers": convert_answers_to_payload_0_0_3(
                 answer_store, list_store, schema, routing_path
             ),
-            "lists": list_store.serialise(),
+            "lists": list_store.serialize(),
         }
     elif schema.json["data_version"] == "0.0.1":
         payload["data"] = convert_answers_to_payload_0_0_1(

@@ -1,3 +1,5 @@
+from pytest import xfail
+
 from tests.integration.integration_test_case import IntegrationTestCase
 
 
@@ -8,18 +10,21 @@ class TestQuestionnaireLanguage(IntegrationTestCase):
         # When: load a cy survey
         self.launchSurvey("test_language", language_code="cy")
         # Then: welsh
+        self.post()
         self.assertInBody("Rhowch enw")
 
     def test_load_non_existent_lang_fallback(self):
         # When: load a hindi survey
         self.launchSurvey("test_language", language_code="hi")
         # Then: Falls back to english
+        self.post()
         self.assertInBody("First Name")
 
     def test_language_switch_in_flight(self):
         # load a english survey
         self.launchSurvey("test_language", language_code="en")
         # The language is english
+        self.post()
         self.assertInBody("First Name")
         # Switch the language to welsh
         self.get("{}?language_code=cy".format(self.last_url))
@@ -29,38 +34,11 @@ class TestQuestionnaireLanguage(IntegrationTestCase):
         # load a english survey
         self.launchSurvey("test_language", language_code="en")
         # The language is english
+        self.post()
         self.assertInBody("First Name")
         # Try and switch to an invalid language
         self.get("{}?language_code=hi".format(self.last_url))
         self.assertInBody("First Name")
-
-    def test_title_placeholders_rendered_in_summary_using_correct_language(self):
-        self.launchSurvey("test_language")
-
-        self.post({"first-name": "Kevin", "last-name": "Bacon"})
-        self.assertInBody("What is Kevin Bacon’s date of birth?")
-
-        self.post(
-            {
-                "date-of-birth-answer-day": 1,
-                "date-of-birth-answer-month": 2,
-                "date-of-birth-answer-year": 1999,
-            }
-        )
-
-        self.post({"number-of-people-answer": 0})
-
-        self.post({"confirm-count": "Yes"})
-
-        self.assertInUrl("/summary/")
-        self.assertInBody("What is Kevin Bacon’s date of birth?")
-        self.assertInBody("1 February 1999")
-
-        self.get(self.last_url + "?language_code=cy")
-
-        self.assertInUrl("/summary/?language_code=cy")
-        self.assertInBody("Beth yw dyddiad geni Kevin Bacon?")
-        self.assertInBody("1 Chwefror 1999")
 
     def test_plural_forms_rendered_using_correct_language(self):
         test_data_sets = [
@@ -158,6 +136,7 @@ class TestQuestionnaireLanguage(IntegrationTestCase):
                 self.setUp()
                 self.launchSurvey("test_language")
 
+                self.post()
                 self.post({"first-name": "Kevin", "last-name": "Bacon"})
 
                 self.post(
@@ -176,21 +155,64 @@ class TestQuestionnaireLanguage(IntegrationTestCase):
                 self.assertInBody(data["question_title"]["cy"])
                 self.assertInBody(data["answer"]["cy"])
 
-                self.post({"confirm-count": "Yes"})
-
-                self.assertInUrl("/summary/")
-                self.assertInBody(data["question_title"]["cy"])
-                self.assertInBody(data["answer"]["cy"])
-
-                self.get(self.last_url + "?language_code=en")
-                self.assertInBody(data["question_title"]["en"])
-                self.assertInBody(data["answer"]["en"])
-
     def test_error_messages(self):
         # load a welsh survey
         self.launchSurvey("test_language", language_code="cy")
         # Submit and check the error message is in Welsh
         self.post()
+        xfail("Error strings have been updated, waiting for translations to be done")
         self.assertInBody("Mae 1 gwall ar y dudalen hon")
-        self.assertInBody("Mae'n <strong>rhaid cywiro'r</strong> rhain cyn parhau")
         self.assertInBody("Nodwch ateb i barhau")
+
+    def test_contact_us_link(self):
+        # load a welsh survey
+        self.launchSurvey("test_language", language_code="cy")
+        # Get redirected to a 404
+        self.get("/not-a-page")
+        self.assertInBody("https://cyfrifiad.gov.uk/cysylltu-a-ni/")
+
+    def test_language_switch_hub_submission(self):
+        # load an English survey
+        self.launchSurvey("test_language", language_code="en")
+
+        # Complete the survey
+        self.post()
+        self.post({"first-name": "John", "last-name": "Smith"})
+        self.post(
+            {
+                "date-of-birth-answer-day": 1,
+                "date-of-birth-answer-month": 2,
+                "date-of-birth-answer-year": 1999,
+            }
+        )
+        self.post({"number-of-people-answer": 1})
+        self.post({"confirm-count": "Yes"})
+
+        # Check the custom hub text is in English
+        self.assertInBody("Submission title")
+        self.assertInBody("Submission warning")
+        self.assertInBody("Submission guidance")
+        self.assertInBody("Submission button")
+
+        # Switch language to Welsh
+        self.get(self.last_url + "?language_code=cy")
+
+        # Check the custom hub text is in Welsh
+        self.assertInBody("Teitl cyflwyno")
+        self.assertInBody("Rhybudd cyflwyno")
+        self.assertInBody("Canllawiau cyflwyno")
+        self.assertInBody("Botwm cyflwyno")
+
+    def test_last_viewed_guidance_is_displayed_after_language_switch(self):
+        # load a welsh survey
+        self.launchSurvey("test_language", language_code="en")
+        self.post()
+        self.post({"first-name": "John", "last-name": "Smith"})
+
+        # Resume the survey and check the last viewed guidance is being displayed
+        self.get("/questionnaire/dob-block/?resume=True")
+        self.assertInBody("This is the last viewed question in this section")
+
+        # Switch the language to welsh and check that the last viewed guidance is still being displayed (in welsh)
+        self.get(f"{self.last_url}&language_code=cy")
+        self.assertInBody("Dyma'r cwestiwn a gafodd ei weld ddiwethaf yn yr adran hon")

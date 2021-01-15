@@ -7,11 +7,23 @@ image:
   tag: latest
   pullPolicy: Always
 
+individualResponseLimit: "75"
+individualResponsePostalDeadline: "2021-04-28T02:00:00+00:00"
+
 submissionBucket: ""
+feedbackBucket: ""
 
 googleTagManagerId: ""
 googleTagManagerAuth: ""
-googleTagManagerPreview: ""
+
+webServer:
+  type: "gunicorn-async"
+  workers: "7"
+  threads: "10"
+  uwsgiAsyncCores: "10"
+
+datastore:
+  useGRPC: "False"
 
 newRelic:
   enabled: "False"
@@ -39,3 +51,15 @@ autoscaler:
 rollingUpdate:
   maxUnavailable: ""
   maxSurge: ""
+
+cdn:
+  url: "https://cdn.eq.census-gcp.onsdigital.uk"
+  assets_path: "/design-system"
+
+addressLookupApi:
+  url: "https://whitelodge-ai-api.census-gcp.onsdigital.uk"
+  authEnabled: "False"
+  authTokenLeewayInSeconds: 300
+
+confirmationEmailLimit: 10
+feedbackLimit: 10

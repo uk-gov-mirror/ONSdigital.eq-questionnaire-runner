@@ -33,21 +33,18 @@
                             "type": "Question",
                             "id": "name-block",
                             "question": {
-                                "description": "",
                                 "id": "name-question",
                                 "title": "Who is this questionnaire about?",
                                 "type": "General",
                                 "answers": [
                                     {
                                         "id": "first-name-answer",
-                                        "description": "",
                                         "label": "First Name",
                                         "mandatory": true,
                                         "type": "TextField"
                                     },
                                     {
                                         "id": "last-name-answer",
-                                        "description": "",
                                         "label": "Last Name",
                                         "mandatory": false,
                                         "type": "TextField"
@@ -106,7 +103,7 @@
         },
         {
             "id": "basic-question-variant-section",
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "id": "basic-question-variant-group",
@@ -394,7 +391,7 @@
         },
         {
             "id": "currency-section",
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "id": "currency-group",

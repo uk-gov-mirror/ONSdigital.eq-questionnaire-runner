@@ -7,8 +7,6 @@ import os
 import re
 from string import Template
 
-from app.questionnaire.questionnaire_schema import QuestionnaireSchema
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -45,21 +43,21 @@ parser.add_argument(
     'Defaults to ".."',
 )
 
-SPEC_PAGE_HEADER = "const helpers = require('../helpers');\n\n"
+SPEC_PAGE_HEADER = "import helpers from '../helpers';\n\n"
 
 SPEC_PAGE_IMPORT = Template(
-    r"""const ${pageName}Page = require('../generated_pages/${pageDir}/${pageFile}');
+    r"""import ${pageName}Page from '../generated_pages/${pageDir}/${pageFile}';
 """
 )
 
 SPEC_EXAMPLE_TEST = Template(
     r"""
-describe('Example Test', function() {
-  beforeEach('Load the survey', function() {
-    browser.openQuestionnaire('${schema}');
+describe("Example Test", () => {
+  beforeEach("Load the survey", () => {
+    browser.openQuestionnaire(schema);
   });
 
-  it('Given..., When..., Then...', function() {
+  it("Given..., When..., Then...", () => {
 
   });
 });
@@ -69,38 +67,47 @@ describe('Example Test', function() {
 
 HEADER = Template(
     r"""// >>> WARNING THIS PAGE WAS AUTO-GENERATED - DO NOT EDIT!!! <<<
-const $basePage = require('$relativeRequirePath/$basePageFile');
+import $basePage from "$relativeRequirePath/$basePageFile";
 
 """
 )
 
 CLASS_NAME = Template(
     r"""class ${pageName}Page extends $basePage {
+"""
+)
+
+SECTION_SUMMARY_PAGE_URL = r"""  url() { return `/questionnaire/sections/${this.pageName}`; }
+
+"""
+
+DEFINITION_TITLE_GETTER = Template(
+    r"""  definitionTitle(definitionIndex) { return `[data-qa='${definitionId}-${definitionIndex}-title']`; }
 
 """
 )
 
-QUESTION_DEFINITION_TITLE_GETTER = Template(
-    r"""  definitionTitle${definitionIndex}() { return '.collapsible:nth-child(${definitionIndex}) > .collapsible__heading'; }
+DEFINITION_CONTENT_GETTER = Template(
+    r"""  definitionContent(definitionIndex) { return `[data-qa='${definitionId}-${definitionIndex}-content']`; }
 
 """
 )
 
-QUESTION_DEFINITION_CONTENT_GETTER = Template(
-    r"""  definitionContent${definitionIndex}() { return '.collapsible:nth-child(${definitionIndex}) > .collapsible__content'; }
+DEFINITION_BUTTON_GETTER = Template(
+    r"""  definitionButton(definitionIndex) { return `[data-qa='${definitionId}-${definitionIndex}-button']`; }
 
 """
 )
 
-QUESTION_DEFINITION_BUTTON_GETTER = Template(
-    r"""  definitionButton${definitionIndex}() { return '.collapsible:nth-child(${definitionIndex}) .js-collapsible-button'; }
+QUESTION_ERROR_PANEL = Template(
+    r"""  ${questionName}ErrorPanel() { return `#${questionId}-error`; }
 
 """
 )
 
 ANSWER_LABEL_GETTER = Template(
     r"""  ${answerName}Label() {
-    return '[for=${answerId}]';
+    return `[for=${answerId}]`;
   }
 
 """
@@ -108,21 +115,23 @@ ANSWER_LABEL_GETTER = Template(
 
 ANSWER_ERROR_GETTER = Template(
     r"""  ${answerName}ErrorItem() {
-    return '[data-qa=error-body] div.panel__body > ul';
+    return `[data-qa=error-body] div.panel__body > ul`;
   }
 
 """
 )
 
 ANSWER_LABEL_DESCRIPTION_GETTER = Template(
-    r"""  ${answerName}LabelDescription() { return 'label[for=${answerId}] > .label__description'; }
+    r"""  ${answerName}LabelDescription() {
+    return `#${answerId}-label-description-hint`;
+  }
 
 """
 )
 
 ANSWER_GETTER = Template(
     r"""  ${answerName}() {
-    return '#${answerId}';
+    return `#${answerId}`;
   }
 
 """
@@ -130,7 +139,7 @@ ANSWER_GETTER = Template(
 
 BLOCK_DESCRIPTION = Template(
     r"""  ${block_name}Description() {
-    return 'div.block__description';
+    return `div.block__description`;
   }
 
 """
@@ -138,116 +147,116 @@ BLOCK_DESCRIPTION = Template(
 
 ANSWER_UNIT_TYPE_GETTER = Template(
     r"""  ${answerName}Unit() {
-    return '#${answerId}-type';
+    return `#${answerId}-type`;
   }
 
 """
 )
 
 SECTION_SUMMARY_ANSWER_GETTER = Template(
-    r"""  ${answerName}() { return '[data-qa="${answerId}"]'; }
+    r"""  ${answerName}() { return `[data-qa="${answerId}"]`; }
 
 """
 )
 
 SECTION_SUMMARY_ANSWER_EDIT_GETTER = Template(
-    r"""  ${answerName}Edit() { return '[data-qa="${answerId}-edit"]'; }
+    r"""  ${answerName}Edit() { return `[data-qa="${answerId}-edit"]`; }
 
 """
 )
 
 SUMMARY_ANSWER_GETTER = Template(
-    r"""  ${answerName}() { return '[data-qa="${answerId}"]'; }
+    r"""  ${answerName}() { return `[data-qa="${answerId}"]`; }
 
 """
 )
 
 
 SUMMARY_ANSWER_EDIT_GETTER = Template(
-    r"""  ${answerName}Edit() { return '[data-qa="${answerId}-edit"]'; }
+    r"""  ${answerName}Edit() { return `[data-qa="${answerId}-edit"]`; }
 
 """
 )
 
 SUMMARY_TITLE_GETTER = Template(
-    r"""  ${group_id_camel}Title() { return '#${group_id}'; }
+    r"""  ${group_id_camel}Title() { return `#${group_id}`; }
 
 """
 )
 
 SUMMARY_SHOW_ALL_BUTTON = Template(
-    r"""  summaryShowAllButton() { return '.js-collapsible-all'; }
+    r"""  summaryShowAllButton() { return `.js-collapsible-all`; }
 
 """
 )
 
 SUMMARY_QUESTION_GETTER = Template(
-    r"""  ${questionName}() { return '[data-qa=${questionId}]'; }
+    r"""  ${questionName}() { return `[data-qa=${questionId}]`; }
 
 """
 )
 
-COLLAPSIBLE_SUMMARY_GETTER = r"""  collapsibleSummary() { return '#summary-accordion'; }
+COLLAPSIBLE_SUMMARY_GETTER = r"""  collapsibleSummary() { return `#summary-accordion`; }
 
 """
 
 CALCULATED_SUMMARY_LABEL_GETTER = Template(
-    r"""  ${answerName}Label() { return '[data-qa=${answerId}-label]'; }
+    r"""  ${answerName}Label() { return `[data-qa=${answerId}-label]`; }
 
 """
 )
 
-LIST_SUMMARY_LABEL_GETTER = r"""  listLabel(instance) { return `tbody:nth-child(${instance}) td:first-child`; }
+LIST_SUMMARY_LABEL_GETTER = r"""  listLabel(instance) { return `[data-qa='list-item-${instance}-label']`; }
 
 """
 
-LIST_SUMMARY_EDIT_LINK_GETTER = r"""  listEditLink(instance) { return `tbody:nth-child(${instance}) td:last-child a[data-qa='change-item-link']`; }
+LIST_SUMMARY_EDIT_LINK_GETTER = r"""  listEditLink(instance) { return `[data-qa='list-item-change-${instance}-link']`; }
 
 """
 
-LIST_SUMMARY_REMOVE_LINK_GETTER = r"""  listRemoveLink(instance) { return `tbody:nth-child(${instance}) td:last-child a[data-qa='remove-item-link']`; }
+LIST_SUMMARY_REMOVE_LINK_GETTER = r"""  listRemoveLink(instance) { return `[data-qa='list-item-remove-${instance}-link']`; }
 
 """
 
-LIST_SUMMARY_LIST_GETTER = r"""  listSummary() { return '.list__item'; }
+LIST_SUMMARY_LIST_GETTER = r"""  listSummary() { return `.list__item`; }
 
 """
 
 LIST_SECTION_SUMMARY_LABEL_GETTER = Template(
-    r"""  ${list_name}ListLabel(listItemInstance) { return 'div[data-qa="${list_name}-list-summary"] tbody:nth-child(' + listItemInstance + ') td:first-child'; }
+    r"""  ${list_name}ListLabel(listItemInstance) { return `div[data-qa="${list_name}-list-summary"] td[data-qa="list-item-` + listItemInstance + `-label"]`; }
 
 """
 )
 
 LIST_SECTION_SUMMARY_ADD_LINK_GETTER = Template(
-    r"""  ${list_name}ListAddLink() { return 'div[data-qa="${list_name}-list-summary"] a[data-qa="add-item-link"]'; }
+    r"""  ${list_name}ListAddLink() { return `div[data-qa="${list_name}-list-summary"] a[data-qa="add-item-link"]`; }
 
 """
 )
 
 LIST_SECTION_SUMMARY_EDIT_LINK_GETTER = Template(
-    r"""  ${list_name}ListEditLink(listItemInstance) { return 'div[data-qa="${list_name}-list-summary"] tbody:nth-child(' + listItemInstance + ') td:last-child a[data-qa="change-item-link"]'; }
+    r"""  ${list_name}ListEditLink(listItemInstance) { return `div[data-qa="${list_name}-list-summary"] a[data-qa="list-item-change-` + listItemInstance + `-link"]`; }
 
 """
 )
 
 LIST_SECTION_SUMMARY_REMOVE_LINK_GETTER = Template(
-    r"""  ${list_name}ListRemoveLink(listItemInstance) { return 'div[data-qa="${list_name}-list-summary"] tbody:nth-child(' + listItemInstance + ') td:last-child a[data-qa="remove-item-link"]'; }
+    r"""  ${list_name}ListRemoveLink(listItemInstance) { return `div[data-qa="${list_name}-list-summary"] a[data-qa="list-item-remove-` + listItemInstance + `-link"]`; }
 
 """
 )
 
-RELATIONSHIP_PLAYBACK_GETTER = r"""  playback() { return '[class*="relationships__playback"]'; }
+RELATIONSHIP_PLAYBACK_GETTER = r"""  playback() { return `[class*="relationships__playback"]`; }
 
 """
 
-CLEAR_SELECTION_BUTTON_GETTER = r"""  clearSelectionButton() { return '.js-clear-btn'; }
+CLEAR_SELECTION_BUTTON_GETTER = r"""  clearSelectionButton() { return `.js-clear-btn`; }
 
 """
 
 CONSTRUCTOR = Template(
     r"""  constructor() {
-    super('${page_id}');
+    super(`${page_id}`);
   }
 
 """
@@ -255,7 +264,8 @@ CONSTRUCTOR = Template(
 
 FOOTER = Template(
     r"""}
-module.exports = new ${pageName}Page();
+
+export default new ${pageName}Page();
 """
 )
 
@@ -287,7 +297,7 @@ def process_options(answer_id, options, page_spec, base_prefix):
         if option["value"][0].isalpha():
             prefix = base_prefix
         else:
-            prefix = base_prefix + "Answer"
+            prefix = f"{base_prefix}Answer"
 
         option_name = camel_case(prefix + generate_pascal_case_from_id(option["value"]))
         option_id = "{name}-{index}".format(name=answer_id, index=index)
@@ -296,6 +306,7 @@ def process_options(answer_id, options, page_spec, base_prefix):
 
         page_spec.write(ANSWER_GETTER.substitute(option_context))
         page_spec.write(ANSWER_LABEL_GETTER.substitute(option_context))
+        page_spec.write(ANSWER_LABEL_DESCRIPTION_GETTER.substitute(option_context))
 
         # Add a selector for an option which exposes another input, e.g.
         # an 'Other' option which exposes a text input for the user to fill in
@@ -311,7 +322,9 @@ def process_answer(answer, page_spec, long_names, page_name):
 
     answer_name = generate_pascal_case_from_id(answer["id"])
     answer_name = answer_name.replace(page_name, "")
-    answer_name = answer_name.replace("Answer", "")
+
+    if not answer_name.replace("Answer", "").isdigit():
+        answer_name = answer_name.replace("Answer", "")
 
     prefix = camel_case(answer_name) if answer_name and long_names else ""
 
@@ -335,16 +348,18 @@ def process_answer(answer, page_spec, long_names, page_name):
 
     elif answer["type"] in "Duration":
         page_spec.write(_write_duration_answer(answer["id"], answer["units"], prefix))
-
-    elif answer["type"] in (
+    elif answer["type"] == "Address":
+        page_spec.write(_write_address_answer(answer["id"], prefix))
+    elif answer["type"] in {
         "TextField",
+        "MobileNumber",
         "Number",
         "TextArea",
         "Currency",
         "Percentage",
         "Unit",
         "Dropdown",
-    ):
+    }:
         answer_context = {
             "answerName": camel_case(answer_name),
             "answerId": answer["id"],
@@ -366,20 +381,20 @@ def process_question(question, page_spec, num_questions, page_name):
     long_names = long_names_required(question, num_questions)
 
     if "definitions" in question:
-        for index, _ in enumerate(question["definitions"], 2):
-            definition_context = {"definitionIndex": index}
-            page_spec.write(
-                QUESTION_DEFINITION_TITLE_GETTER.substitute(definition_context)
-            )
-            page_spec.write(
-                QUESTION_DEFINITION_CONTENT_GETTER.substitute(definition_context)
-            )
-            page_spec.write(
-                QUESTION_DEFINITION_BUTTON_GETTER.substitute(definition_context)
-            )
+        context = {"definitionId": "question-definition"}
+        process_definition(context, page_spec)
 
     for answer in question.get("answers", []):
         process_answer(answer, page_spec, long_names, page_name)
+
+    if question["type"] in ["DateRange", "MutuallyExclusive"]:
+        question_name = generate_pascal_case_from_id(question["id"])
+        question_name = question_name.replace(page_name, "")
+        question_context = {
+            "questionName": camel_case(question_name),
+            "questionId": question["id"],
+        }
+        page_spec.write(QUESTION_ERROR_PANEL.substitute(question_context))
 
 
 def process_calculated_summary(answers, page_spec):
@@ -398,6 +413,12 @@ def process_final_summary(schema_data, page_spec, collapsible, section_summary=F
 
     if collapsible:
         page_spec.write(COLLAPSIBLE_SUMMARY_GETTER)
+
+
+def process_definition(context, page_spec):
+    page_spec.write(DEFINITION_TITLE_GETTER.safe_substitute(context))
+    page_spec.write(DEFINITION_CONTENT_GETTER.safe_substitute(context))
+    page_spec.write(DEFINITION_BUTTON_GETTER.safe_substitute(context))
 
 
 def write_summary_spec(collapsible, page_spec, section, section_summary):
@@ -426,6 +447,7 @@ def write_summary_spec(collapsible, page_spec, section, section_summary):
                 }
                 for answer in question.get("answers", []):
                     answer_name = generate_pascal_case_from_id(answer["id"])
+
                     answer_context = {
                         "answerName": camel_case(answer_name),
                         "answerId": answer["id"],
@@ -525,6 +547,21 @@ def _write_duration_answer(answer_id, units, prefix):
     return "".join(resp)
 
 
+def _write_address_answer(answer_id, prefix):
+    resp = []
+    for address_field in {"line1", "line2", "town", "postcode"}:
+        resp.append(
+            ANSWER_GETTER.substitute(
+                {
+                    "answerName": f"{prefix}{address_field.title()}",
+                    "answerId": f"{answer_id}-{address_field}",
+                }
+            )
+        )
+
+    return "".join(resp)
+
+
 def find_kv(block, key, values):
     for question in get_all_questions(block):
         for answer in question.get("answers", []):
@@ -562,6 +599,16 @@ def process_block(
             spec_file,
             relative_require,
             page_filename=f'{block["id"]}-add.page.js',
+        )
+
+    if block["type"] == "RelationshipCollector" and "unrelated_block" in block:
+        process_block(
+            block["unrelated_block"],
+            dir_out,
+            schema_data,
+            spec_file,
+            relative_require,
+            page_filename=f'{block["unrelated_block"]["id"]}.page.js',
         )
 
     page_path = os.path.join(dir_out, page_filename)
@@ -604,6 +651,22 @@ def process_block(
             process_calculated_summary(
                 block["calculation"]["answers_to_calculate"], page_spec
             )
+        elif block["type"] == "Interstitial":
+            has_definition = False
+            if "content_variants" in block:
+                for variant in block["content_variants"]:
+                    block_contents = variant["content"]["contents"]
+                    if _has_definitions_in_block_contents(block_contents):
+                        has_definition = True
+            else:
+                block_contents = block["content"].get("contents", [])
+                if _has_definitions_in_block_contents(block_contents):
+                    has_definition = True
+
+            if has_definition:
+                context = {"definitionId": "definition"}
+                process_definition(context, page_spec)
+
         else:
             if block.get("description"):
                 page_spec.write(BLOCK_DESCRIPTION.substitute(block_context))
@@ -620,10 +683,17 @@ def process_block(
             page_spec.write(LIST_SUMMARY_REMOVE_LINK_GETTER)
             page_spec.write(LIST_SUMMARY_LIST_GETTER)
 
+        if block["type"] == "UnrelatedQuestion":
+            page_spec.write(LIST_SUMMARY_LABEL_GETTER)
+
         page_spec.write(FOOTER.substitute(block_context))
 
         if spec_file:
             append_spec_page_import(block_context, spec_file)
+
+
+def _has_definitions_in_block_contents(block_contents):
+    return any("definition" in element for element in block_contents)
 
 
 def process_schema(in_schema, out_dir, spec_file, require_path=".."):
@@ -678,6 +748,7 @@ def process_section_summary(
         page_spec.write(HEADER.substitute(section_context))
         page_spec.write(CLASS_NAME.substitute(section_context))
         page_spec.write(CONSTRUCTOR.substitute(section_context))
+        page_spec.write(SECTION_SUMMARY_PAGE_URL)
         write_summary_spec(False, page_spec, section, True)
         page_spec.write(FOOTER.substitute(section_context))
 

@@ -7,15 +7,11 @@ class QuestionPage extends BasePage {
   }
 
   url() {
-    return "/questionnaire/" + this.pageName;
+    return `/questionnaire/${this.pageName}`;
   }
 
   myAccountLink() {
     return "#my-account";
-  }
-
-  summaryQuestionText() {
-    return ".summary__item-title";
   }
 
   questionText() {
@@ -31,11 +27,15 @@ class QuestionPage extends BasePage {
   }
 
   errorHeader() {
-    return "#main-content > div.panel.panel--error.u-mb-s > div.panel__header > div";
+    return '[data-qa="error-header"]';
+  }
+
+  errorList() {
+    return '[data-qa="error-list"]';
   }
 
   errorNumber(number = 1) {
-    return `[data-qa="error-body"] ul > li:nth-child(${number}) > a`;
+    return `[data-qa="error-link-${number}"]`;
   }
 
   previous() {
@@ -52,6 +52,18 @@ class QuestionPage extends BasePage {
 
   displayedDescription() {
     return '[data-qa="block-description"]';
+  }
+
+  individualResponseGuidance() {
+    return '[data-qa="individual-response-url"]';
+  }
+
+  lastViewedQuestionGuidance() {
+    return "#last-viewed-question-guidance";
+  }
+
+  lastViewedQuestionGuidanceLink() {
+    return "#section-start-link";
   }
 
   submit() {
@@ -73,6 +85,14 @@ class QuestionPage extends BasePage {
   returnToHubLink() {
     return 'a[href="/questionnaire/"]';
   }
+
+  warning() {
+    return '[data-qa="warning"]';
+  }
+
+  guidance() {
+    return '[data-qa="guidance"]';
+  }
 }
 
-module.exports = QuestionPage;
+export default QuestionPage;

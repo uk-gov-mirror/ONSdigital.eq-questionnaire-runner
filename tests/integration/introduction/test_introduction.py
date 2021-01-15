@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from tests.integration.integration_test_case import IntegrationTestCase
 
 
@@ -52,7 +53,7 @@ class TestIntroduction(IntegrationTestCase):
         self.post(action="start_questionnaire")
 
         # When start survey button is pressed,
-        # Then started_at should be set in collection_metadata (and payload)
+        # Then started_at should be set in response_metadata (and payload)
         actual = self.dumpSubmission()["submission"]
 
         started_at_datetime = datetime.strptime(

@@ -42,6 +42,10 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
         # Perform setup steps
         self._set_up_app()
 
+    @property
+    def test_app(self):
+        return self._application
+
     def _set_up_app(self):
         self._ds = patch("app.setup.datastore.Client", MockDatastore)
         self._ds.start()
@@ -143,7 +147,7 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
         self.assertStatusOK()
         return json.loads(self.getResponseData())
 
-    def get(self, url, **kwargs):
+    def get(self, url, follow_redirects=True, **kwargs):
         """
         GETs the specified URL, following any redirects.
 
@@ -155,7 +159,7 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
         :param url: the URL to GET
         """
         environ, response = self._client.get(
-            url, as_tuple=True, follow_redirects=True, **kwargs
+            url, as_tuple=True, follow_redirects=follow_redirects, **kwargs
         )
 
         self._cache_response(environ, response)
@@ -189,6 +193,18 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
 
         self._cache_response(environ, response)
 
+    def sign_out(self):
+        selected = self.getHtmlSoup().find("a", {"name": "btn-save-sign-out"})
+        return self.get(selected["href"])
+
+    def exit(self):
+        """
+        GETs the sign-out url from the exit button. Does not follow the external
+        redirect.
+        """
+        url = self.getHtmlSoup().find("a", {"name": "btn-exit"})["href"]
+        self.get(url, follow_redirects=False)
+
     def previous(self):
         selector = "#top-previous"
         selected = self.getHtmlSoup().select(selector)
@@ -217,7 +233,7 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
 
     def getCookie(self):
         """
-            Returns the last received response cookie session
+        Returns the last received response cookie session
         """
         cookie = self.last_response.headers["Set-Cookie"]
         cookie_session = cookie.split("session=.")[1].split(";")[0]
@@ -255,8 +271,8 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
         # intentionally not using assertIn to avoid duplicating the output message
         self.assertTrue(content in str(data), msg=message)
 
-    def assertInSelectorCSS(self, content, *selectors):
-        data = self.getHtmlSoup().find(*selectors)
+    def assertInSelectorCSS(self, content, *selectors, **kwargs):
+        data = self.getHtmlSoup().find(*selectors, **kwargs)
         message = "\n{} not in \n{}".format(content, data)
 
         # intentionally not using assertIn to avoid duplicating the output message
@@ -295,6 +311,7 @@ class IntegrationTestCase(unittest.TestCase):  # pylint: disable=too-many-public
 
     def assertStatusNotFound(self):
         self.assertStatusCode(404)
+        self.assertInBody("Page not found")
 
     def assertStatusCode(self, status_code):
         if self.last_response is not None:

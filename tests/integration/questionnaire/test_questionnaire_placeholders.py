@@ -52,4 +52,19 @@ class TestPlaceholders(IntegrationTestCase):
         self.assertInBody("Please enter the total retail turnover")
         self.assertInBody("Please enter the value of internet sales")
         self.assertInBody("Please enter the number of items")
-        self.assertInBody("Do you want to add <em>a 3rd</em> item?")
+        self.assertInBody("Do you want to add a 3rd item?")
+
+    def test_placeholder_address_selector_rendered_in_page(self):
+        self.launchSurvey("test_address")
+
+        self.post(
+            {
+                "address-mandatory-line1": "7 Evelyn Street",
+                "address-mandatory-postcode": "CF63 4JG",
+            }
+        )
+        self.post({})
+
+        self.assertInBody(
+            "Please confirm the first line of your address is 7 Evelyn Street"
+        )

@@ -1,17 +1,13 @@
-const QuestionPage = require("./question.page");
+import QuestionPage from "./question.page";
 
 class ThankYouPage extends QuestionPage {
   constructor() {
     super("summary");
   }
 
-  viewSubmissionText() {
-    return '[data-qa="view-submission-text"]';
-  }
-
-  summaryRowState(number = 1) {
-    return `tbody:nth-child(${number}) tr td.summary__values`;
+  summaryRowState(sectionId) {
+    return `[data-qa="${sectionId}"]`;
   }
 }
 
-module.exports = new ThankYouPage();
+export default new ThankYouPage();

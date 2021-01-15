@@ -34,7 +34,6 @@
                                 "answers": [
                                     {
                                         "id": "topping-checkbox-answer",
-                                        "label": "",
                                         "mandatory": false,
                                         "options": [
                                             {
@@ -79,7 +78,6 @@
                                         }
                                     }
                                 ],
-                                "description": "",
                                 "id": "topping-checkbox-question",
                                 "title": "What extra toppings would you like?",
                                 "type": "General"
@@ -209,8 +207,7 @@
                             "id": "summary"
                         }
                     ],
-                    "id": "checkboxes",
-                    "title": ""
+                    "id": "checkboxes"
                 }
             ]
         }

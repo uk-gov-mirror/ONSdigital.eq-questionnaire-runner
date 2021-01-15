@@ -35,27 +35,23 @@
             "groups": [
                 {
                     "id": "name-group",
-                    "title": "",
                     "blocks": [
                         {
                             "type": "Question",
                             "id": "name-question",
                             "question": {
-                                "description": "",
                                 "id": "primary-name-question",
                                 "title": "Please enter a name",
                                 "type": "General",
                                 "answers": [
                                     {
                                         "id": "first-name",
-                                        "description": "",
                                         "label": "First Name",
                                         "mandatory": true,
                                         "type": "TextField"
                                     },
                                     {
                                         "id": "last-name",
-                                        "description": "",
                                         "label": "Last Name",
                                         "mandatory": false,
                                         "type": "TextField"
@@ -73,13 +69,11 @@
             "groups": [
                 {
                     "id": "dob-input-group",
-                    "title": "",
                     "blocks": [
                         {
                             "type": "Question",
                             "id": "dob-question-block",
                             "question": {
-                                "description": "",
                                 "id": "dob-question",
                                 "title": {
                                     "text": "What is {person_name_possessive} date of birth?",
@@ -249,8 +243,7 @@
                             ]
                         }
                     ],
-                    "id": "group",
-                    "title": ""
+                    "id": "group"
                 }
             ]
         },
@@ -260,7 +253,6 @@
             "groups": [
                 {
                     "id": "mutually-exclusive-mandatory-group",
-                    "title": "",
                     "blocks": [
                         {
                             "type": "Question",

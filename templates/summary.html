@@ -3,19 +3,21 @@
 
 {% import 'macros/helpers.html' as helpers %}
 
-{% set summary_page_title = _("Summary") + " - " + survey_title %}
+{% set summary_page_title = content.title %}
 {% set save_on_signout = true %}
 
 {% block form_content %}
   {% if content.summary.summary_type == 'Summary' %}
-    <h1>{{ _("Check your answers and submit") }}</h1>
+    <h1>{{ content.title }}</h1>
 
-    {% call onsPanel({
-      "classes": "print__hidden u-mb-l"
-    }) %}
-      <strong>{{ _("Please submit this survey to complete it") }}</strong>
-      <p>{{ _("Check your answers before submitting") }}</p>
-    {% endcall %}
+    {% if content.warning %}
+        {% call onsPanel({
+            "type": "warn"
+          }) %}
+          <p data-qa="warning">{{ content.warning }}</p>
+        {% endcall %}
+    {% endif %}
+
   {% elif content.summary.summary_type == 'CalculatedSummary' %}
     <h1 data-qa="calculated-summary-title">{{content.summary.title}}</h1>
 
@@ -31,9 +33,9 @@
     {% include 'partials/summary/summary.html' %}
   </div>
 
-  {% if content.summary.is_view_submission_response_enabled %}
-    <div class="u-mt-m u-mb-s u-mb-m@s" data-qa="view-submission-text">
-      <div class="u-fs-r--b">{{ _("You will have the opportunity to view and print a copy of your answers after submitting this survey") }}</div>
+  {% if content.guidance %}
+    <div class="u-mt-l">
+          <p class="u-mb-no" data-qa="guidance">{{ content.guidance }}</p>
     </div>
   {% endif %}
 {% endblock -%}

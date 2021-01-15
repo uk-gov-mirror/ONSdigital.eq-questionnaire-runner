@@ -1,8 +1,6 @@
 from tests.integration.components.mutually_exclusive.schema_urls import (
     MUTUALLY_EXCLUSIVE_YEAR_DATE,
 )
-
-
 from tests.integration.integration_test_case import IntegrationTestCase
 
 
@@ -56,4 +54,4 @@ class TestYearDateSingleCheckboxOverride(IntegrationTestCase):
         )
 
         # Then
-        self.assertInBody("Remove an answer to continue.")
+        self.assertInBody("Remove an answer")

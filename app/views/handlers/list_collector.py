@@ -1,8 +1,7 @@
 from flask import url_for
 
-from app.views.handlers.question import Question
 from app.views.contexts import ListContext
-from app.views.contexts.question import build_question_context
+from app.views.handlers.question import Question
 
 
 class ListCollector(Question):
@@ -22,8 +21,7 @@ class ListCollector(Question):
         return super().get_next_location_url()
 
     def get_context(self):
-        question_context = build_question_context(self.rendered_block, self.form)
-
+        question_context = super().get_context()
         list_context = ListContext(
             self._language,
             self._schema,
@@ -44,13 +42,11 @@ class ListCollector(Question):
         }
 
     def handle_post(self):
-        if (
-            self.form.data[self.rendered_block["add_answer"]["id"]]
-            == self.rendered_block["add_answer"]["value"]
-        ):
-            self._is_adding = True
-            self.questionnaire_store_updater.update_answers(self.form)
+        answer_action = self._get_answer_action()
 
+        if answer_action and answer_action["type"] == "RedirectToListAddBlock":
+            self._is_adding = True
+            self.questionnaire_store_updater.update_answers(self.form.data)
             self.questionnaire_store_updater.save()
         else:
             return super().handle_post()

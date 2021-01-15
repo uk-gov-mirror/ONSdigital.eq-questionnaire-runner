@@ -1,16 +1,12 @@
 import BasePage from "./base.page";
 
 class IntroductionPage extends BasePage {
-  constructor(pageName) {
-    super(pageName);
-  }
-
   myAccountLink() {
     return "#my-account";
   }
 
-  signOut() {
-    return '[data-qa="btn-sign-out"]';
+  exitButton() {
+    return '[data-qa="btn-exit"]';
   }
 
   getStarted() {
@@ -42,4 +38,4 @@ class IntroductionPage extends BasePage {
   }
 }
 
-module.exports = IntroductionPage;
+export default IntroductionPage;

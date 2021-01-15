@@ -9,10 +9,6 @@
     "navigation": {
         "visible": true
     },
-    "view_submitted_response": {
-        "enabled": true,
-        "duration": 900
-    },
     "metadata": [
         {
             "name": "user_id",
@@ -31,7 +27,7 @@
         {
             "id": "test-skipping-section",
             "title": "Section 1",
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "blocks": [
@@ -56,7 +52,6 @@
                                         "type": "Radio"
                                     }
                                 ],
-                                "description": "",
                                 "id": "test-skipping-question",
                                 "type": "General"
                             },
@@ -116,7 +111,7 @@
         {
             "id": "test-skipping-section-2",
             "title": "Section 2",
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "blocks": [
@@ -140,7 +135,6 @@
                                         "type": "Radio"
                                     }
                                 ],
-                                "description": "",
                                 "id": "test-skipping-question-2",
                                 "title": "Were you forced to complete section 2?",
                                 "type": "General"

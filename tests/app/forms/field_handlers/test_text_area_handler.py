@@ -1,8 +1,8 @@
 from wtforms import Form
 
-from app.data_model.answer_store import AnswerStore
-from app.forms.field_handlers.text_area_handler import TextAreaHandler
-from app.forms.fields.max_text_area_field import MaxTextAreaField
+from app.data_models.answer_store import AnswerStore
+from app.forms.field_handlers import TextAreaHandler
+from app.forms.fields import MaxTextAreaField
 
 
 def test_get_field():
@@ -83,7 +83,7 @@ def test_get_text_area_rows_with_default():
         "type": "TextArea",
     }
 
-    text_area_handler = TextAreaHandler(answer)
+    text_area_handler = TextAreaHandler(answer, disable_validation=True)
 
     class TestForm(Form):
         test_field = text_area_handler.get_field()
@@ -102,7 +102,7 @@ def test_get_text_area_rows():
         "type": "TextArea",
     }
 
-    text_area_handler = TextAreaHandler(answer)
+    text_area_handler = TextAreaHandler(answer, disable_validation=True)
 
     class TestForm(Form):
         test_field = text_area_handler.get_field()

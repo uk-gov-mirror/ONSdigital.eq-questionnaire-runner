@@ -48,7 +48,6 @@
                                         "type": "TextField"
                                     }
                                 ],
-                                "description": "",
                                 "id": "personal-details-question",
                                 "title": "Tell me about yourself",
                                 "type": "General"
@@ -59,8 +58,7 @@
                             "id": "summary"
                         }
                     ],
-                    "id": "multiple-questions-group",
-                    "title": ""
+                    "id": "multiple-questions-group"
                 }
             ]
         }

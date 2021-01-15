@@ -28,7 +28,6 @@
             "groups": [
                 {
                     "id": "dates",
-                    "title": "",
                     "blocks": [
                         {
                             "type": "Question",
@@ -50,7 +49,6 @@
                                         "type": "Date"
                                     }
                                 ],
-                                "description": "",
                                 "id": "date-range-question",
                                 "title": "Date range",
                                 "type": "DateRange"
@@ -69,7 +67,6 @@
                                         "type": "MonthYearDate"
                                     }
                                 ],
-                                "description": "",
                                 "id": "month-year-question",
                                 "title": "Date with month and year",
                                 "type": "General"
@@ -88,7 +85,6 @@
                                         "type": "Date"
                                     }
                                 ],
-                                "description": "",
                                 "id": "single-date-question",
                                 "title": "Single date type",
                                 "type": "General"
@@ -107,7 +103,6 @@
                                         "type": "Date"
                                     }
                                 ],
-                                "description": "",
                                 "id": "non-mandatory-date-question",
                                 "title": "Non Mandatory",
                                 "type": "General"
@@ -126,7 +121,6 @@
                                         "type": "YearDate"
                                     }
                                 ],
-                                "description": "",
                                 "id": "year-date-question",
                                 "title": "Year (YYYY)",
                                 "type": "General"

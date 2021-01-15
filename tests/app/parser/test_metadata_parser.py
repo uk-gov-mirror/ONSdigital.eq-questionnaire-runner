@@ -4,10 +4,10 @@ import pytest
 from marshmallow import ValidationError
 
 from app.storage.metadata_parser import (
-    validate_runner_claims,
     validate_questionnaire_claims,
+    validate_runner_claims,
 )
-from app.utilities.schema import transform_region_code, transform_form_type
+from app.utilities.schema import transform_form_type, transform_region_code
 
 
 def test_spaces_are_stripped_from_string_fields(fake_metadata_runner):
@@ -121,7 +121,7 @@ def test_uuid_deserialisation(fake_metadata_runner):
     assert isinstance(claims["tx_id"], str)
 
 
-def test_unknown_claims_are_not_deserialised(fake_metadata_runner):
+def test_unknown_claims_are_not_deserialized(fake_metadata_runner):
     fake_metadata_runner["unknown_key"] = "some value"
     claims = validate_runner_claims(fake_metadata_runner)
     assert "unknown_key" not in claims

@@ -1,17 +1,17 @@
 import functools
-
 from typing import Dict
-from structlog import get_logger
+
 from marshmallow import (
-    Schema,
-    fields,
-    validate,
     EXCLUDE,
-    pre_load,
-    post_load,
-    validates_schema,
+    Schema,
     ValidationError,
+    fields,
+    post_load,
+    pre_load,
+    validate,
+    validates_schema,
 )
+from structlog import get_logger
 
 from app.utilities.schema import get_schema_name_from_census_params
 
@@ -19,7 +19,7 @@ logger = get_logger()
 
 
 class RegionCode(validate.Regexp):
-    """ A region code defined as per ISO 3166-2:GB
+    """A region code defined as per ISO 3166-2:GB
     Currently, this does not validate the subdivision, but only checks length
     """
 
@@ -28,9 +28,9 @@ class RegionCode(validate.Regexp):
 
 
 class UUIDString(fields.UUID):
-    """ Currently, runner cannot handle UUID objects in metadata
-    Since all metadata is serialised and deserialised to JSON.
-    This custom field deserialises UUIDs to strings.
+    """Currently, runner cannot handle UUID objects in metadata
+    Since all metadata is serialized and deserialized to JSON.
+    This custom field deserializes UUIDs to strings.
     """
 
     def _deserialize(self, *args, **kwargs):  # pylint: disable=arguments-differ
@@ -38,9 +38,9 @@ class UUIDString(fields.UUID):
 
 
 class DateString(fields.DateTime):
-    """ Currently, runner cannot handle Date objects in metadata
-    Since all metadata is serialised and deserialised to JSON.
-    This custom field deserialises Dates to strings.
+    """Currently, runner cannot handle Date objects in metadata
+    Since all metadata is serialized and deserialized to JSON.
+    This custom field deserializes Dates to strings.
     """
 
     def _deserialize(self, *args, **kwargs):  # pylint: disable=arguments-differ
@@ -57,8 +57,8 @@ VALIDATORS = {
 
 
 class StripWhitespaceMixin:
-    @pre_load
-    def strip_whitespace(self, items):  # pylint: disable=no-self-use
+    @pre_load()
+    def strip_whitespace(self, items, **kwargs):  # pylint: disable=no-self-use
         for key, value in items.items():
             if isinstance(value, str):
                 items[key] = value.strip()
@@ -66,41 +66,48 @@ class StripWhitespaceMixin:
 
 
 class RunnerMetadataSchema(Schema, StripWhitespaceMixin):
-    """ Metadata which is required for the operation of runner itself
-    """
+    """Metadata which is required for the operation of runner itself"""
 
-    jti = VALIDATORS["uuid"]()
-    ru_ref = VALIDATORS["string"](validate=validate.Length(min=1))
-    collection_exercise_sid = VALIDATORS["string"](validate=validate.Length(min=1))
-    tx_id = VALIDATORS["uuid"]()
-    questionnaire_id = VALIDATORS["string"](validate=validate.Length(min=1))
-    response_id = VALIDATORS["string"](validate=validate.Length(min=1))
+    jti = VALIDATORS["uuid"]()  # type:ignore
+    ru_ref = VALIDATORS["string"](validate=validate.Length(min=1))  # type:ignore
+    collection_exercise_sid = VALIDATORS["string"](
+        validate=validate.Length(min=1)
+    )  # type:ignore
+    tx_id = VALIDATORS["uuid"]()  # type:ignore
+    questionnaire_id = VALIDATORS["string"](
+        validate=validate.Length(min=1)
+    )  # type:ignore
+    response_id = VALIDATORS["string"](validate=validate.Length(min=1))  # type:ignore
 
-    account_service_url = VALIDATORS["url"](required=False)
-    case_id = VALIDATORS["uuid"](required=False)
-    account_service_log_out_url = VALIDATORS["url"](required=False)
+    account_service_url = VALIDATORS["url"](required=False)  # type:ignore
+    case_id = VALIDATORS["uuid"](required=False)  # type:ignore
+    account_service_log_out_url = VALIDATORS["url"](required=False)  # type:ignore
     roles = fields.List(fields.String(), required=False)
-    survey_url = VALIDATORS["url"](required=False)
-    language_code = VALIDATORS["string"](required=False)
-    channel = VALIDATORS["string"](required=False, validate=validate.Length(min=1))
-    case_type = VALIDATORS["string"](required=False)
+    survey_url = VALIDATORS["url"](required=False)  # type:ignore
+    language_code = VALIDATORS["string"](required=False)  # type:ignore
+    channel = VALIDATORS["string"](
+        required=False, validate=validate.Length(min=1)
+    )  # type:ignore
+    case_type = VALIDATORS["string"](required=False)  # type:ignore
 
     # Either schema_name OR the three census parameters are required. Should be required after census.
-    schema_name = VALIDATORS["string"](required=False)
+    schema_name = VALIDATORS["string"](required=False)  # type:ignore
 
     # The following three parameters can be removed after Census
     survey = VALIDATORS["string"](
         required=False, validate=validate.OneOf(("CENSUS", "CCS")), missing="CENSUS"
-    )
+    )  # type:ignore
     form_type = VALIDATORS["string"](
         required=False, validate=validate.OneOf(("H", "I", "C"))
-    )
-    region_code = VALIDATORS["string"](required=False, validate=RegionCode())
+    )  # type:ignore
+    region_code = VALIDATORS["string"](
+        required=False, validate=RegionCode()
+    )  # type:ignore
 
     @validates_schema
     def validate_schema_name(self, data, **kwargs):
         # pylint: disable=no-self-use, unused-argument
-        """ Temporary function for census to validate the census schema parameters
+        """Temporary function for census to validate the census schema parameters
         This can be removed after census.
         """
         individual_schema_claims = (
@@ -117,7 +124,7 @@ class RunnerMetadataSchema(Schema, StripWhitespaceMixin):
     @post_load
     def convert_schema_name(self, data, **kwargs):
         # pylint: disable=no-self-use, unused-argument
-        """ Temporary function for census to transform parameters into a census schema
+        """Temporary function for census to transform parameters into a census schema
         This can be removed after census.
         """
         if data.get("schema_name"):

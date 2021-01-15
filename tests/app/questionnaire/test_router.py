@@ -1,8 +1,10 @@
+from unittest.mock import Mock
+
 from flask import url_for
 
-from app.data_model.answer_store import AnswerStore
-from app.data_model.list_store import ListStore
-from app.data_model.progress_store import ProgressStore, CompletionStatus
+from app.data_models.answer_store import AnswerStore
+from app.data_models.list_store import ListStore
+from app.data_models.progress_store import CompletionStatus, ProgressStore
 from app.questionnaire.location import Location
 from app.questionnaire.router import Router
 from app.questionnaire.routing_path import RoutingPath
@@ -126,6 +128,68 @@ class TestRouter(AppContextTestCase):  # pylint: disable=too-many-public-methods
         self.assertFalse(can_access_location)
 
     def test_next_location_url(self):
+        schema = load_schema_from_name("test_checkbox")
+        progress_store = ProgressStore(
+            [
+                {
+                    "section_id": "default-section",
+                    "list_item_id": None,
+                    "status": CompletionStatus.IN_PROGRESS,
+                    "block_ids": ["mandatory-checkbox"],
+                }
+            ]
+        )
+
+        router = Router(
+            schema, self.answer_store, self.list_store, progress_store, self.metadata
+        )
+
+        current_location = Location(
+            section_id="default-section", block_id="mandatory-checkbox"
+        )
+        routing_path = RoutingPath(
+            ["mandatory-checkbox", "non-mandatory-checkbox", "single-checkbox"],
+            section_id="default-section",
+        )
+        next_location = router.get_next_location_url(current_location, routing_path)
+        expected_location = Location(
+            section_id="default-section", block_id="non-mandatory-checkbox"
+        ).url()
+
+        self.assertEqual(next_location, expected_location)
+
+    def test_return_to_summary_next_location_url(self):
+        schema = load_schema_from_name("test_section_summary")
+        progress_store = ProgressStore(
+            [
+                {
+                    "section_id": "property-details-section",
+                    "list_item_id": None,
+                    "status": CompletionStatus.COMPLETED,
+                    "block_ids": ["insurance-type", "insurance-address"],
+                }
+            ]
+        )
+
+        router = Router(
+            schema, self.answer_store, self.list_store, progress_store, self.metadata
+        )
+
+        current_location = Location(
+            section_id="property-details-section", block_id="insurance-type"
+        )
+        routing_path = RoutingPath(
+            ["insurance-type", "insurance-address"], section_id="default-section"
+        )
+        next_location = router.get_next_location_url(
+            current_location, routing_path, return_to="section-summary"
+        )
+
+        self.assertIn(
+            "/questionnaire/sections/property-details-section/", next_location
+        )
+
+    def test_return_to_final_summary_next_location_url(self):
         schema = load_schema_from_name("test_textfield")
         progress_store = ProgressStore(
             [
@@ -141,10 +205,123 @@ class TestRouter(AppContextTestCase):  # pylint: disable=too-many-public-methods
         router = Router(
             schema, self.answer_store, self.list_store, progress_store, self.metadata
         )
-
         current_location = Location(section_id="default-section", block_id="name-block")
         routing_path = RoutingPath(
             ["name-block", "summary"], section_id="default-section"
+        )
+        next_location = router.get_next_location_url(
+            current_location, routing_path, return_to="final-summary"
+        )
+        expected_location = Location(
+            section_id="default-section", block_id="summary"
+        ).url()
+
+        self.assertEqual(next_location, expected_location)
+
+    def test_return_to_first_incomplete_location_when_last_block_in_section_in_progress(
+        self,
+    ):
+        schema = Mock()
+        schema.get_block.return_value = {"type": "Question"}
+        progress_store = ProgressStore(
+            [
+                {
+                    "section_id": "section-1",
+                    "list_item_id": None,
+                    "status": CompletionStatus.IN_PROGRESS,
+                    "block_ids": ["block-1"],
+                }
+            ]
+        )
+        router = Router(
+            schema, self.answer_store, self.list_store, progress_store, self.metadata
+        )
+        current_location = Location(section_id="section-1", block_id="block-1")
+        routing_path = RoutingPath(
+            ["block-1", "block-2", "block-1"], section_id="section-1"
+        )
+        next_location = router.get_next_location_url(current_location, routing_path)
+        self.assertIn("questionnaire/block-2/", next_location)
+
+    def test_last_block_section_summary_on_completion_true_next_location_url(self):
+        schema = load_schema_from_name("test_show_section_summary_on_completion")
+        progress_store = ProgressStore(
+            [
+                {
+                    "section_id": "accommodation-section",
+                    "list_item_id": None,
+                    "status": CompletionStatus.COMPLETED,
+                    "block_ids": ["proxy"],
+                }
+            ]
+        )
+        router = Router(
+            schema, self.answer_store, self.list_store, progress_store, self.metadata
+        )
+        current_location = Location(
+            section_id="accommodation-section", block_id="proxy"
+        )
+        routing_path = RoutingPath(["proxy"], section_id="default-section")
+        next_location = router.get_next_location_url(current_location, routing_path)
+
+        self.assertIn("questionnaire/sections/accommodation-section/", next_location)
+
+    def test_last_block_section_summary_on_completion_false_next_location_url(self):
+        schema = load_schema_from_name("test_show_section_summary_on_completion")
+        progress_store = ProgressStore(
+            [
+                {
+                    "section_id": "employment-section",
+                    "list_item_id": None,
+                    "status": CompletionStatus.COMPLETED,
+                    "block_ids": ["employment-status"],
+                }
+            ]
+        )
+        router = Router(
+            schema, self.answer_store, self.list_store, progress_store, self.metadata
+        )
+        current_location = Location(
+            section_id="employment-section", block_id="employment-type"
+        )
+        routing_path = RoutingPath(
+            ["employment-status", "employment-type"], section_id="employment-section"
+        )
+        next_location = router.get_next_location_url(current_location, routing_path)
+        expected_location_url = url_for("questionnaire.get_questionnaire")
+
+        self.assertEqual(next_location, expected_location_url)
+
+    def test_last_block_no_section_summary_next_location_url(self):
+        schema = load_schema_from_name("test_checkbox")
+        progress_store = ProgressStore(
+            [
+                {
+                    "section_id": "default-section",
+                    "list_item_id": None,
+                    "status": CompletionStatus.IN_PROGRESS,
+                    "block_ids": [
+                        "mandatory-checkbox",
+                        "non-mandatory-checkbox",
+                        "single-checkbox",
+                    ],
+                }
+            ]
+        )
+        router = Router(
+            schema, self.answer_store, self.list_store, progress_store, self.metadata
+        )
+        current_location = Location(
+            section_id="default-section", block_id="single-checkbox"
+        )
+        routing_path = RoutingPath(
+            [
+                "mandatory-checkbox",
+                "non-mandatory-checkbox",
+                "single-checkbox",
+                "summary",
+            ],
+            section_id="default-section",
         )
         next_location = router.get_next_location_url(current_location, routing_path)
         expected_location = Location(
@@ -385,7 +562,7 @@ class TestRouter(AppContextTestCase):  # pylint: disable=too-many-public-methods
 
         self.assertTrue(is_survey_complete)
 
-    def test_get_first_incomplete_location_in_section(self):
+    def test_get_first_incomplete_location_url_in_section(self):
         schema = load_schema_from_name("test_section_summary")
 
         progress_store = ProgressStore(
@@ -408,18 +585,18 @@ class TestRouter(AppContextTestCase):  # pylint: disable=too-many-public-methods
             section_id="property-details-section",
         )
 
-        incomplete = router.get_first_incomplete_location_for_section(
+        section_resume_url = router.get_section_resume_url(
             routing_path=section_routing_path
         )
 
         self.assertEqual(
-            incomplete,
-            Location(
-                section_id="property-details-section", block_id="insurance-address"
-            ),
+            section_resume_url,
+            "http://test.localdomain/questionnaire/insurance-address/?resume=True",
         )
 
-    def test_get_section_return_location_when_section_complete_no_section_summary(self):
+    def test_get_section_return_location_url_when_section_complete_no_section_summary(
+        self,
+    ):
         schema = load_schema_from_name("test_hub_and_spoke")
 
         router = Router(
@@ -434,13 +611,11 @@ class TestRouter(AppContextTestCase):  # pylint: disable=too-many-public-methods
             ["employment-status", "employment-type"], section_id="employment-section"
         )
 
-        location_when_section_complete = router.get_first_incomplete_location_for_section(
-            routing_path=routing_path
-        )
+        section_resume_url = router.get_section_resume_url(routing_path=routing_path)
 
         self.assertEqual(
-            location_when_section_complete,
-            Location(section_id="employment-section", block_id="employment-status"),
+            section_resume_url,
+            "http://test.localdomain/questionnaire/employment-status/",
         )
 
     def test_enabled_section_ids(self):
@@ -485,7 +660,12 @@ class TestRouter(AppContextTestCase):  # pylint: disable=too-many-public-methods
 
         expected_path = [
             RoutingPath(
-                ["mandatory-checkbox", "non-mandatory-checkbox", "summary"],
+                [
+                    "mandatory-checkbox",
+                    "non-mandatory-checkbox",
+                    "single-checkbox",
+                    "summary",
+                ],
                 section_id="default-section",
             )
         ]

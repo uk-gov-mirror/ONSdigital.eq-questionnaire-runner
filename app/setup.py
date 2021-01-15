@@ -1,34 +1,42 @@
-import copy
-import json
+from copy import deepcopy
+from typing import Dict
 from uuid import uuid4
 
 import boto3
 import redis
+import simplejson as json
 import yaml
 from botocore.config import Config
-from flask import Flask, request as flask_request, session as cookie_session
+from flask import Flask
+from flask import request as flask_request
+from flask import session as cookie_session
 from flask_babel import Babel
-from flask_caching import Cache
 from flask_compress import Compress
 from flask_talisman import Talisman
 from flask_wtf.csrf import CSRFProtect
-from google.auth import credentials
 from google.cloud import datastore
 from htmlmin.main import minify
 from sdc.crypto.key_store import KeyStore, validate_required_keys
 from structlog import get_logger
+
 from app import settings
 from app.authentication.authenticator import login_manager
 from app.authentication.cookie_session import SHA256SecureCookieSessionInterface
 from app.authentication.user_id_generator import UserIDGenerator
 from app.globals import get_session_store
-from app.keys import KEY_PURPOSE_SUBMISSION
 from app.helpers import get_span_and_trace
+from app.keys import KEY_PURPOSE_SUBMISSION
+from app.publisher import LogPublisher, PubSubPublisher
 from app.secrets import SecretStore, validate_required_secrets
-from app.storage.datastore import DatastoreStorage
-from app.storage.dynamodb import DynamodbStorage
-from app.storage.redis import RedisStorage
-from app.submitter.submitter import LogSubmitter, RabbitMQSubmitter, GCSSubmitter
+from app.storage import Datastore, Dynamodb, Redis
+from app.submitter import (
+    GCSFeedbackSubmitter,
+    GCSSubmitter,
+    LogFeedbackSubmitter,
+    LogSubmitter,
+    RabbitMQSubmitter,
+)
+from app.utilities.schema import cache_questionnaire_schemas
 
 CACHE_HEADERS = {
     "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -36,65 +44,34 @@ CACHE_HEADERS = {
 }
 
 CSP_POLICY = {
-    "default-src": ["'self'", "https://cdn.ons.gov.uk"],
-    "font-src": [
-        "'self'",
-        "data:",
-        "https://cdn.ons.gov.uk",
-        "https://fonts.gstatic.com",
-    ],
+    "default-src": ["'self'"],
+    "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
     "script-src": [
         "'self'",
-        "https://cdn.ons.gov.uk",
         "https://www.googletagmanager.com",
         "'unsafe-inline'",
         "'unsafe-eval'",
     ],
     "style-src": [
         "'self'",
-        "https://cdn.ons.gov.uk",
         "https://tagmanager.google.com",
         "https://fonts.googleapis.com",
         "'unsafe-inline'",
     ],
-    "connect-src": [
-        "'self'",
-        "https://cdn.ons.gov.uk",
-        "https://cdn.eq.census-gcp.onsdigital.uk",
-    ],
+    "connect-src": ["'self'"],
     "frame-src": ["https://www.googletagmanager.com"],
     "img-src": [
         "'self'",
         "data:",
-        "https://cdn.ons.gov.uk",
         "https://www.google-analytics.com",
         "https://ssl.gstatic.com",
         "https://www.gstatic.com",
     ],
 }
 
-cache = Cache()
 compress = Compress()
 
 logger = get_logger()
-
-
-class EmulatorCredentials(credentials.Credentials):
-    """A mock GCP credential object.
-    Used in conjunction with local emulators that don't require proper
-    credentials e.g. Datastore
-    """
-
-    def __init__(self):  # pylint: disable=super-init-not-called
-        self.token = b"seekrit"
-        self.expiry = None
-
-    @property
-    def valid(self):
-        return True
-
-    def refresh(self, request):  # pylint: disable=unused-argument
-        raise RuntimeError("Should never be refreshed.")
 
 
 class AWSReverseProxied:
@@ -109,26 +86,26 @@ class AWSReverseProxied:
 
 
 def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
-    setting_overrides=None
+    setting_overrides=None,
 ):
     application = Flask(__name__, template_folder="../templates")
     application.config.from_object(settings)
-
+    if setting_overrides:
+        application.config.update(setting_overrides)
     application.eq = {}
 
     with open(application.config["EQ_SECRETS_FILE"]) as secrets_file:
         secrets = yaml.safe_load(secrets_file)
+    conditional_required_secrets = []
+    if application.config["ADDRESS_LOOKUP_API_AUTH_ENABLED"]:
+        conditional_required_secrets.append("ADDRESS_LOOKUP_API_AUTH_TOKEN_SECRET")
+    validate_required_secrets(secrets, conditional_required_secrets)
+    application.eq["secret_store"] = SecretStore(secrets)
 
     with open(application.config["EQ_KEYS_FILE"]) as keys_file:
         keys = yaml.safe_load(keys_file)
-
-    validate_required_secrets(secrets)
     validate_required_keys(keys, KEY_PURPOSE_SUBMISSION)
-    application.eq["secret_store"] = SecretStore(secrets)
     application.eq["key_store"] = KeyStore(keys)
-
-    if setting_overrides:
-        application.config.update(setting_overrides)
 
     if application.config["EQ_APPLICATION_VERSION"]:
         logger.info(
@@ -161,6 +138,10 @@ def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
 
     setup_submitter(application)
 
+    setup_feedback(application)
+
+    setup_publisher(application)
+
     application.eq["id_generator"] = UserIDGenerator(
         application.config["EQ_SERVER_SIDE_STORAGE_USER_ID_ITERATIONS"],
         application.eq["secret_store"].get_secret_by_name(
@@ -170,6 +151,8 @@ def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
             "EQ_SERVER_SIDE_STORAGE_USER_IK_SALT"
         ),
     )
+
+    cache_questionnaire_schemas()
 
     setup_secure_cookies(application)
 
@@ -187,22 +170,9 @@ def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
 
     add_safe_health_check(application)
 
-    compress.init_app(application)
+    setup_compression(application)
 
-    if application.config["EQ_DEV_MODE"]:
-        start_dev_mode(application)
-
-    if application.config["EQ_ENABLE_CACHE"]:
-        cache.init_app(application, config={"CACHE_TYPE": "simple"})
-    else:
-        # no cache and silence warning
-        cache.init_app(application, config={"CACHE_NO_NULL_WARNING": True})
-
-    # Switch off flask default autoescaping as schema content can contain html
-    application.jinja_env.autoescape = False
-
-    # pylint: disable=no-member
-    application.jinja_env.add_extension("jinja2.ext.do")
+    setup_jinja_env(application)
 
     @application.after_request
     def apply_caching(response):  # pylint: disable=unused-variable
@@ -239,7 +209,7 @@ def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
     def after_request(response):  # pylint: disable=unused-variable
         # We're using the stringified version of the Flask session to get a rough
         # length for the cookie. The real length won't be known yet as Flask
-        # serialises and adds the cookie header after this method is called.
+        # serializes and adds the cookie header after this method is called.
         logger.info(
             "response",
             status_code=response.status_code,
@@ -250,8 +220,31 @@ def create_app(  # noqa: C901  pylint: disable=too-complex, too-many-statements
     return application
 
 
+def setup_jinja_env(application):
+    # Enable whitespace removal
+    application.jinja_env.trim_blocks = True
+    application.jinja_env.lstrip_blocks = True
+
+    # Switch off flask default autoescaping as schema content can contain html
+    application.jinja_env.autoescape = False
+
+    # pylint: disable=no-member
+    application.jinja_env.add_extension("jinja2.ext.do")
+
+
+def _add_cdn_url_to_csp_policy(cdn_url) -> Dict:
+    csp_policy = deepcopy(CSP_POLICY)
+    for directive in csp_policy:
+        if directive != "frame-src":
+            csp_policy[directive].append(cdn_url)
+    return csp_policy
+
+
 def setup_secure_headers(application):
-    csp_policy = copy.deepcopy(CSP_POLICY)
+    csp_policy = _add_cdn_url_to_csp_policy(application.config["CDN_URL"])
+
+    if api_url := application.config["ADDRESS_LOOKUP_API_URL"]:
+        csp_policy["connect-src"] += [api_url]
 
     if application.config["EQ_ENABLE_LIVE_RELOAD"]:
         # browsersync is configured to bind on port 5075
@@ -294,17 +287,12 @@ def setup_dynamodb(application):
         endpoint_url=application.config["EQ_DYNAMODB_ENDPOINT"],
         config=config,
     )
-    application.eq["storage"] = DynamodbStorage(dynamodb)
+    application.eq["storage"] = Dynamodb(dynamodb)
 
 
 def setup_datastore(application):
-    creds = (
-        EmulatorCredentials()
-        if application.config["EQ_DATASTORE_EMULATOR_CREDENTIALS"]
-        else None
-    )
-    client = datastore.Client(_use_grpc=False, credentials=creds)
-    application.eq["storage"] = DatastoreStorage(client)
+    client = datastore.Client(_use_grpc=application.config["DATASTORE_USE_GRPC"])
+    application.eq["storage"] = Datastore(client)
 
 
 def setup_redis(application):
@@ -313,7 +301,7 @@ def setup_redis(application):
         port=application.config["EQ_REDIS_PORT"],
     )
 
-    application.eq["ephemeral_storage"] = RedisStorage(redis_client)
+    application.eq["ephemeral_storage"] = Redis(redis_client)
 
 
 def setup_submitter(application):
@@ -354,16 +342,32 @@ def setup_submitter(application):
         raise Exception("Unknown EQ_SUBMISSION_BACKEND")
 
 
-def start_dev_mode(application):
-    if application.config["EQ_ENABLE_FLASK_DEBUG_TOOLBAR"]:
-        application.config["DEBUG_TB_PROFILER_ENABLED"] = True
-        application.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
-        application.debug = True
-        from flask_debugtoolbar import (  # pylint: disable=import-outside-toplevel
-            DebugToolbarExtension,
+def setup_publisher(application):
+    if application.config["EQ_PUBLISHER_BACKEND"] == "pubsub":
+        application.eq["publisher"] = PubSubPublisher()
+
+    elif application.config["EQ_PUBLISHER_BACKEND"] == "log":
+        application.eq["publisher"] = LogPublisher()
+
+    else:
+        raise Exception("Unknown EQ_PUBLISHER_BACKEND")
+
+
+def setup_feedback(application):
+    if application.config["EQ_FEEDBACK_BACKEND"] == "gcs":
+        bucket_id = application.config.get("EQ_GCS_FEEDBACK_BUCKET_ID")
+
+        if not bucket_id:
+            raise Exception("Setting EQ_GCS_FEEDBACK_BUCKET_ID Missing")
+
+        application.eq["feedback_submitter"] = GCSFeedbackSubmitter(
+            bucket_name=bucket_id
         )
 
-        DebugToolbarExtension(application)
+    elif application.config["EQ_FEEDBACK_BACKEND"] == "log":
+        application.eq["feedback_submitter"] = LogFeedbackSubmitter()
+    else:
+        raise Exception("Unknown EQ_FEEDBACK_BACKEND")
 
 
 # pylint: disable=import-outside-toplevel
@@ -407,15 +411,15 @@ def add_blueprints(application):
 
     application.register_blueprint(filter_blueprint)
 
-    from app.routes.static import static_blueprint
-
-    application.register_blueprint(static_blueprint)
-    static_blueprint.config = application.config.copy()
-
     from app.routes.schema import schema_blueprint
 
     application.register_blueprint(schema_blueprint)
     schema_blueprint.config = application.config.copy()
+
+    from app.routes.individual_response import individual_response_blueprint
+
+    application.register_blueprint(individual_response_blueprint)
+    individual_response_blueprint = application.config.copy()
 
 
 def setup_secure_cookies(application):
@@ -442,6 +446,11 @@ def setup_babel(application):
     def get_timezone():  # pylint: disable=unused-variable
         # For now regardless of locale we will show times in GMT/BST
         return "Europe/London"
+
+
+def setup_compression(application):
+    application.config["COMPRESS_ALGORITHM"] = ["gzip", "br", "deflate"]
+    compress.init_app(application)
 
 
 def add_safe_health_check(application):

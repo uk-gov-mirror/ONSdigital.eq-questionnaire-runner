@@ -4,7 +4,8 @@ from datetime import datetime
 
 import flask
 import flask_babel
-from babel import units, numbers
+from babel import numbers, units
+from flask import current_app
 from jinja2 import Markup, escape, evalcontextfilter
 
 from app.questionnaire.rules import convert_to_datetime
@@ -13,12 +14,25 @@ from app.settings import MAX_NUMBER
 blueprint = flask.Blueprint("filters", __name__)
 
 
+def mark_safe(context, value):
+    return Markup(value) if context.autoescape else value
+
+
+def strip_tags(value):
+    return escape(Markup(value).striptags())
+
+
 @blueprint.app_template_filter()
 def format_number(value):
     if value or value == 0:
         return numbers.format_decimal(value, locale=flask_babel.get_locale())
 
     return ""
+
+
+def get_formatted_address(address_fields):
+    address_fields.pop("uprn", None)
+    return "<br>".join(address_field for address_field in address_fields.values())
 
 
 def get_formatted_currency(value, currency="GBP"):
@@ -158,12 +172,6 @@ def get_currency_symbol_processor():
     return dict(get_currency_symbol=get_currency_symbol)
 
 
-def mark_safe(context, value):
-    if context.autoescape:
-        value = Markup(value)
-    return value
-
-
 @blueprint.app_template_filter()
 def setAttribute(dictionary, key, value):
     dictionary[key] = value
@@ -288,9 +296,13 @@ class RelationshipRadioConfig:
             # the 'pre-' prefix is added to the attributes here so that html minification
             # doesn't mess with the attribute contents (the 'pre-' is removed during minification).
             # see https://htmlmin.readthedocs.io/en/latest/quickstart.html
+            attribute_key = (
+                "pre-" if current_app.config["EQ_ENABLE_HTML_MINIFY"] else ""
+            )
+
             self.attributes = {
-                "pre-data-title": escape(answer_option["title"]),
-                "pre-data-playback": escape(answer_option["playback"]),
+                f"{attribute_key}data-title": escape(answer_option["title"]),
+                f"{attribute_key}data-playback": escape(answer_option["playback"]),
             }
 
 
@@ -298,13 +310,25 @@ class OtherConfig:
     def __init__(self, detail_answer_field, detail_answer_schema):
         self.id = detail_answer_field.id
         self.name = detail_answer_field.name
-        self.value = escape(
-            detail_answer_field._value()
-        )  # pylint: disable=protected-access
+
         self.label = LabelConfig(detail_answer_field.id, detail_answer_field.label.text)
         self.open = detail_answer_schema.get("visible", False)
-        if detail_answer_schema["type"] == "Number":
-            self.classes = get_width_class_for_number(detail_answer_schema)
+        answer_type = detail_answer_schema["type"]
+
+        if answer_type == "Dropdown":
+            self.otherType = "select"
+            self.options = [
+                SelectOptionConfig(choice, detail_answer_field)
+                for choice in detail_answer_field.choices
+            ]
+        else:
+            self.otherType = "input"
+            self.value = escape(
+                detail_answer_field._value()
+            )  # pylint: disable=protected-access
+
+            if answer_type == "Number":
+                self.classes = get_width_class_for_number(detail_answer_schema)
 
 
 @blueprint.app_template_filter()
@@ -347,15 +371,14 @@ def map_relationships_config_processor():
 
 class SelectOptionConfig:
     def __init__(self, option, select):
-        self.text = option[1]
-        self.value = option[0]
+        self.value, self.text = option
         self.selected = select.data == self.value
         self.disabled = self.value == "" and select.flags.required
 
 
 @blueprint.app_template_filter()
 def map_select_config(select):
-    return [SelectOptionConfig(tuple[1], select) for tuple in enumerate(select.choices)]
+    return [SelectOptionConfig(choice, select) for choice in select.choices]
 
 
 @blueprint.app_context_processor
@@ -388,7 +411,7 @@ class SummaryRowItemValue:
 
 
 class SummaryRowItem:
-    def __init__(  # noqa: C901, R0912  pylint: disable=too-complex,too-many-branches
+    def __init__(  # noqa: C901, R0912 pylint: disable=too-complex, too-many-branches
         self,
         block,
         question,
@@ -418,7 +441,7 @@ class SummaryRowItem:
             self.rowTitle = answer["label"]
             self.rowTitleAttributes = {"data-qa": answer["id"] + "-label"}
         else:
-            self.rowTitle = question["title"]
+            self.rowTitle = strip_tags(question["title"])
             self.rowTitleAttributes = {"data-qa": question["id"]}
 
         value = answer["value"]
@@ -427,6 +450,8 @@ class SummaryRowItem:
 
         if value is None or value == "":
             self.valueList = [SummaryRowItemValue(no_answer_provided)]
+        elif answer_type == "address":
+            self.valueList = [SummaryRowItemValue(get_formatted_address(value))]
         elif answer_type == "checkbox":
             self.valueList = [
                 SummaryRowItemValue(option["label"], option["detail_answer_value"])
@@ -484,7 +509,7 @@ class SummaryRow:
         edit_link_text,
         edit_link_aria_label,
     ):
-        self.rowTitle = question["title"]
+        self.rowTitle = strip_tags(question["title"])
         self.rowItems = []
 
         multiple_answers = len(question["answers"]) > 1
@@ -558,7 +583,7 @@ def map_list_collector_config(
 ):
     rows = []
 
-    for list_item in list_items:
+    for index, list_item in enumerate(list_items, start=1):
         item_name = list_item.get("item_title")
 
         actions = []
@@ -569,7 +594,7 @@ def map_list_collector_config(
                     "text": edit_link_text,
                     "ariaLabel": edit_link_aria_label.format(item_name=item_name),
                     "url": list_item.get("edit_link"),
-                    "attributes": {"data-qa": "change-item-link"},
+                    "attributes": {"data-qa": f"list-item-change-{index}-link"},
                 }
             )
 
@@ -579,12 +604,24 @@ def map_list_collector_config(
                     "text": remove_link_text,
                     "ariaLabel": remove_link_aria_label.format(item_name=item_name),
                     "url": list_item.get("remove_link"),
-                    "attributes": {"data-qa": "remove-item-link"},
+                    "attributes": {"data-qa": f"list-item-remove-{index}-link"},
                 }
             )
 
         rows.append(
-            {"rowTitle": item_name, "rowItems": [{"icon": icon, "actions": actions}]}
+            {
+                "rowItems": [
+                    {
+                        "icon": icon,
+                        "actions": actions,
+                        "rowTitle": item_name,
+                        "rowTitleAttributes": {
+                            "data-qa": f"list-item-{index}-label",
+                            "data-list-item-id": list_item.get("list_item_id"),
+                        },
+                    }
+                ]
+            }
         )
 
     return rows
@@ -593,13 +630,3 @@ def map_list_collector_config(
 @blueprint.app_context_processor
 def map_list_collector_config_processor():
     return dict(map_list_collector_config=map_list_collector_config)
-
-
-@blueprint.app_template_filter()
-def format_paragraphs(text):
-    return "\n".join(f"<p>{paragraph}</p>" for paragraph in text.splitlines())
-
-
-@blueprint.app_context_processor
-def paragraphs_processor():
-    return dict(format_paragraphs=format_paragraphs)

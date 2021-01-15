@@ -37,7 +37,6 @@
                                 "answers": [
                                     {
                                         "id": "country-checkbox-answer",
-                                        "label": "",
                                         "mandatory": false,
                                         "type": "Checkbox",
                                         "options": [
@@ -122,8 +121,7 @@
                             "id": "summary"
                         }
                     ],
-                    "id": "checkboxes",
-                    "title": ""
+                    "id": "checkboxes"
                 }
             ]
         }

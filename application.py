@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-
 import logging
 import os
 import sys
 
+from simplejson import dumps
 from structlog import configure
 from structlog.dev import ConsoleRenderer
-from structlog.processors import JSONRenderer, format_exc_info
-from structlog.processors import TimeStamper
+from structlog.processors import JSONRenderer, TimeStamper, format_exc_info
 from structlog.stdlib import LoggerFactory, add_log_level
 from structlog.threadlocal import wrap_dict
 
@@ -42,7 +41,7 @@ def configure_logging():
         return event_dict
 
     # setup file logging
-    renderer_processor = ConsoleRenderer() if debug else JSONRenderer()
+    renderer_processor = ConsoleRenderer() if debug else JSONRenderer(serializer=dumps)
     processors = [
         add_log_level,
         TimeStamper(key="created", fmt="iso"),
@@ -70,7 +69,9 @@ def add_service(logger, method_name, event_dict):  # pylint: disable=unused-argu
 
 # Initialise logging before the rest of the application
 configure_logging()
-from app.setup import create_app  # pylint: disable=wrong-import-position # NOQA
+from app.setup import (  # NOQA isort:skip # pylint: disable=wrong-import-position
+    create_app,
+)
 
 application = create_app()
 

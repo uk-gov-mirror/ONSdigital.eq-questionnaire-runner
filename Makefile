@@ -1,4 +1,5 @@
 SCHEMAS_VERSION=`cat .schemas-version`
+DESIGN_SYSTEM_VERSION=`cat .design-system-version`
 
 clean:
 	rm -rf schemas
@@ -8,14 +9,24 @@ clean:
 load-schemas:
 	./scripts/load_release.sh onsdigital/eq-questionnaire-schemas $(SCHEMAS_VERSION)
 
-load-templates:
-	./scripts/load_release.sh onsdigital/design-system 17.0.0
+load-design-system-templates:
+	./scripts/load_release.sh onsdigital/design-system $(DESIGN_SYSTEM_VERSION)
 
-build: load-templates
+build: load-design-system-templates
 	make translate
 
-lint:
+lint: lint-python
+	yarn lint
+
+lint-python:
 	pipenv run ./scripts/run_lint_python.sh
+
+format: format-python
+	yarn format
+
+format-python:
+	pipenv run isort .
+	pipenv run black .
 
 test:
 	pipenv run ./scripts/run_tests.sh
@@ -41,13 +52,26 @@ translate:
 run-validator:
 	pipenv run ./scripts/run_validator.sh
 
-run: build
+link-development-env:
 	ln -sf .development.env .env
+
+run: build link-development-env
 	pipenv run flask run
 
-gunicorn:
-	ln -sf .development.env .env
-	pipenv run ./run_gunicorn.sh
+run-gunicorn-async: link-development-env
+	WEB_SERVER_TYPE=gunicorn-async pipenv run ./run_app.sh
+
+run-gunicorn-threads: link-development-env
+	WEB_SERVER_TYPE=gunicorn-threads pipenv run ./run_app.sh
+
+run-uwsgi: link-development-env
+	WEB_SERVER_TYPE=uwsgi pipenv run ./run_app.sh
+
+run-uwsgi-threads: link-development-env
+	WEB_SERVER_TYPE=uwsgi-threads pipenv run ./run_app.sh
+
+run-uwsgi-async: link-development-env
+	WEB_SERVER_TYPE=uwsgi-async pipenv run ./run_app.sh
 
 dev-compose-up:
 	docker-compose pull eq-questionnaire-launcher

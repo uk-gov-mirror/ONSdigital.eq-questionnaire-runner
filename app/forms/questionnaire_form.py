@@ -5,12 +5,11 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from flask_wtf import FlaskForm
-from werkzeug.datastructures import MultiDict
+from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 from wtforms import validators
 
-from app.forms.field_factory import get_field_handler
-from app.forms.field_handlers.date_handler import DateHandler
-from app.forms.validators import DateRangeCheck, SumCheck, MutuallyExclusiveCheck
+from app.forms.field_handlers import DateHandler, get_field_handler
+from app.forms.validators import DateRangeCheck, MutuallyExclusiveCheck, SumCheck
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +25,16 @@ class QuestionnaireForm(FlaskForm):
         self.location = location
         self.question_errors = {}
         self.options_with_detail_answer = {}
+        self.question_title = self.question.get("title", "")
 
         super().__init__(**kwargs)
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         """
         Validate this form as usual and check for any form-level validation errors based on question type
         :return: boolean
         """
+        super(QuestionnaireForm, self).validate(extra_validators)
         valid_fields = FlaskForm.validate(self)
         valid_date_range_form = True
         valid_calculated_form = True
@@ -49,8 +50,8 @@ class QuestionnaireForm(FlaskForm):
                 and valid_mutually_exclusive_form
                 and valid_fields
             ):
-                valid_mutually_exclusive_form = self.validate_mutually_exclusive_question(
-                    self.question
+                valid_mutually_exclusive_form = (
+                    self.validate_mutually_exclusive_question(self.question)
                 )
 
         return (
@@ -121,15 +122,21 @@ class QuestionnaireForm(FlaskForm):
             question["validation"].get("messages") if "validation" in question else None
         )
         answers = (getattr(self, answer["id"]).data for answer in question["answers"])
+        is_only_checkboxes = all(
+            answer["type"] == "Checkbox" for answer in question["answers"]
+        )
 
-        validator = MutuallyExclusiveCheck(messages=messages)
+        validator = MutuallyExclusiveCheck(
+            messages=messages,
+            question_title=self.question_title,
+        )
 
         try:
-            validator(answers, is_mandatory)
+            validator(answers, is_mandatory, is_only_checkboxes)
         except validators.ValidationError as e:
             self.question_errors[question["id"]] = str(e)
-            return False
 
+            return False
         return True
 
     def _get_target_total_and_currency(self, calculation, question):
@@ -292,7 +299,10 @@ class QuestionnaireForm(FlaskForm):
 
         if self.question["id"] in self.question_errors:
             ordered_errors += [
-                (self.question["id"], self.question_errors[self.question["id"]])
+                (
+                    _get_error_id(self.question["id"]),
+                    self.question_errors[self.question["id"]],
+                )
             ]
 
         for answer in self.question["answers"]:
@@ -320,9 +330,7 @@ def _option_value_in_data(answer, option, data):
 
 def get_answer_fields(question, data, error_messages, answer_store, metadata, location):
     answer_fields = {}
-    if not question:
-        return answer_fields
-
+    question_title = question.get("title")
     for answer in question.get("answers", []):
         for option in answer.get("options", []):
             if "detail_answer" in option:
@@ -335,10 +343,16 @@ def get_answer_fields(question, data, error_messages, answer_store, metadata, lo
                     metadata,
                     location,
                     disable_validation=disable_validation,
+                    question_title=question_title,
                 ).get_field()
 
         answer_fields[answer["id"]] = get_field_handler(
-            answer, error_messages, answer_store, metadata, location
+            answer,
+            error_messages,
+            answer_store,
+            metadata,
+            location,
+            question_title=question_title,
         ).get_field()
 
     return answer_fields
@@ -372,8 +386,23 @@ def map_detail_answer_errors(errors, answer_json):
     return detail_answer_errors
 
 
-def _get_error_id(answer_id):
-    return f"{answer_id}-error"
+def _get_error_id(id):
+    return f"{id}-error"
+
+
+def _clear_detail_answer_field(form_data, question_schema):
+    """
+    Clears the detail answer field if the parent option is not selected
+    """
+    for answer in question_schema["answers"]:
+        for option in answer.get("options", []):
+            if "detail_answer" in option and option["value"] not in form_data.getlist(
+                answer["id"]
+            ):
+                if isinstance(form_data, ImmutableMultiDict):
+                    form_data = MultiDict(form_data)
+                form_data[option["detail_answer"]["id"]] = ""
+    return form_data
 
 
 def generate_form(
@@ -383,14 +412,17 @@ def generate_form(
     metadata,
     location=None,
     data=None,
-    formdata=None,
+    form_data=None,
 ):
     class DynamicForm(QuestionnaireForm):
         pass
 
+    if form_data:
+        form_data = _clear_detail_answer_field(form_data, question_schema)
+
     answer_fields = get_answer_fields(
         question_schema,
-        formdata if formdata is not None else data,
+        form_data if form_data is not None else data,
         schema.error_messages,
         answer_store,
         metadata,
@@ -400,9 +432,6 @@ def generate_form(
     for answer_id, field in answer_fields.items():
         setattr(DynamicForm, answer_id, field)
 
-    if formdata:
-        formdata = MultiDict(formdata)
-
     return DynamicForm(
         schema,
         question_schema,
@@ -410,5 +439,5 @@ def generate_form(
         metadata,
         location,
         data=data,
-        formdata=formdata,
+        formdata=form_data,
     )

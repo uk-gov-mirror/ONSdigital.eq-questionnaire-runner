@@ -8,13 +8,13 @@ jobs:
   create-pull-request:
     runs-on: ubuntu-18.04
     steps:
-      - name: Update and commit schemas version
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
           ref: 'master'
-      - run: |
+      - name: Update and commit schemas version
+        run: |
           TAG="${{ github.event.client_payload.tag }}"
-          echo "::set-env name=SCHEMAS_VERSION::$TAG"
+          echo "SCHEMAS_VERSION=$TAG" >> $GITHUB_ENV
 
           # Import GPG key to sign the commit
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode | gpg --import --no-tty --batch --yes

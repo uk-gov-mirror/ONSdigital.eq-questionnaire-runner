@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from dateutil.tz import tzutc
-from flask import Blueprint, redirect, request, g, session as cookie_session
+from flask import Blueprint, g, redirect, request
+from flask import session as cookie_session
 from flask import url_for
 from flask_login import logout_user
 from marshmallow import ValidationError
@@ -9,10 +10,10 @@ from sdc.crypto.exceptions import InvalidTokenException
 from structlog import get_logger
 from werkzeug.exceptions import Unauthorized
 
-from app.authentication.authenticator import store_session, decrypt_token
+from app.authentication.authenticator import decrypt_token, store_session
 from app.authentication.jti_claim_storage import JtiTokenUsed, use_jti_claim
 from app.globals import get_session_timeout_in_seconds
-from app.helpers.template_helper import render_template
+from app.helpers.template_helpers import render_template
 from app.storage.metadata_parser import (
     validate_questionnaire_claims,
     validate_runner_claims,
@@ -83,7 +84,6 @@ def login():
     store_session(claims)
 
     cookie_session["theme"] = g.schema.json["theme"]
-    cookie_session["survey_title"] = g.schema.json["title"]
     cookie_session["expires_in"] = get_session_timeout_in_seconds(g.schema)
 
     if claims.get("account_service_url"):
@@ -98,13 +98,16 @@ def login():
 
 
 def validate_jti(decrypted_token):
-    expires = datetime.utcfromtimestamp(decrypted_token["exp"]).replace(tzinfo=tzutc())
-    if expires < datetime.now(tz=tzutc()):
+    expires_at = datetime.utcfromtimestamp(decrypted_token["exp"]).replace(
+        tzinfo=tzutc()
+    )
+    jwt_expired = expires_at < datetime.now(tz=tzutc())
+    if jwt_expired:
         raise Unauthorized
 
     jti_claim = decrypted_token.get("jti")
     try:
-        use_jti_claim(jti_claim, expires)
+        use_jti_claim(jti_claim, expires_at)
     except JtiTokenUsed as e:
         raise Unauthorized from e
     except (TypeError, ValueError) as e:
@@ -118,7 +121,7 @@ def get_session_expired():
     return render_template("errors/session-expired")
 
 
-@session_blueprint.route("/signed-out", methods=["GET"])
+@session_blueprint.route("/sign-out", methods=["GET"])
 def get_sign_out():
     """
     Signs the user first out of eq, then the account service by hitting the account services'
@@ -126,8 +129,12 @@ def get_sign_out():
     """
     logout_user()
 
-    account_service_log_out_url = cookie_session.get("account_service_log_out_url")
-    if account_service_log_out_url:
-        return redirect(account_service_log_out_url)
+    if log_out_url := cookie_session.get("account_service_log_out_url"):
+        return redirect(log_out_url)
 
+    return redirect(url_for(".get_signed_out"))
+
+
+@session_blueprint.route("/signed-out", methods=["GET"])
+def get_signed_out():
     return render_template(template="signed-out")

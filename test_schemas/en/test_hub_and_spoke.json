@@ -154,7 +154,7 @@
         {
             "id": "accommodation-section",
             "title": "Accommodation",
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "blocks": [
@@ -186,13 +186,12 @@
                             "type": "Question"
                         }
                     ],
-                    "id": "checkboxes",
-                    "title": ""
+                    "id": "checkboxes"
                 }
             ]
         },
         {
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "blocks": [
@@ -227,7 +226,7 @@
                             "question": {
                                 "answers": [
                                     {
-                                        "id": "how-many-people-live-here",
+                                        "id": "how-many-people-live-here-answer",
                                         "mandatory": true,
                                         "options": [
                                             {
@@ -275,16 +274,16 @@
             "id": "relationships-section",
             "title": "Relationships",
             "show_on_hub": false,
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "blocks": [
                         {
-                            "id": "relationships",
+                            "id": "anyone-related",
                             "question": {
                                 "answers": [
                                     {
-                                        "id": "relationships-answer",
+                                        "id": "anyone-related-answer",
                                         "mandatory": false,
                                         "options": [
                                             {
@@ -299,15 +298,14 @@
                                         "type": "Radio"
                                     }
                                 ],
-                                "id": "relationship-question",
+                                "id": "anyone-related-question",
                                 "title": "Are any of the people living here related?",
                                 "type": "General"
                             },
                             "type": "Question"
                         }
                     ],
-                    "id": "relationship-group",
-                    "title": ""
+                    "id": "relationship-group"
                 }
             ]
         }

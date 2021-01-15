@@ -155,7 +155,7 @@
         {
             "id": "accommodation-section",
             "title": "Accommodation",
-            "summary": {},
+            "summary": { "show_on_completion": true },
             "groups": [
                 {
                     "blocks": [
@@ -187,8 +187,7 @@
                             "type": "Question"
                         }
                     ],
-                    "id": "checkboxes",
-                    "title": ""
+                    "id": "checkboxes"
                 }
             ]
         }

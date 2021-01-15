@@ -2,9 +2,9 @@ from unittest.mock import patch
 
 import pytest
 
-from app.data_model.answer_store import Answer, AnswerStore
-from app.data_model.list_store import ListStore
-from app.data_model.progress_store import ProgressStore, CompletionStatus
+from app.data_models.answer_store import Answer, AnswerStore
+from app.data_models.list_store import ListStore
+from app.data_models.progress_store import CompletionStatus, ProgressStore
 from app.questionnaire.path_finder import PathFinder
 from app.questionnaire.routing_path import RoutingPath
 from app.utilities.schema import load_schema_from_name
@@ -152,9 +152,9 @@ class TestPathFinder(AppContextTestCase):
 
     def test_routing_path(self):
         schema = load_schema_from_name("test_summary")
-        section_id = schema.get_section_id_for_block_id("dessert-block")
+        section_id = schema.get_section_id_for_block_id("dessert")
         expected_path = RoutingPath(
-            ["radio", "test-number-block", "dessert-block", "summary"],
+            ["radio", "dessert", "dessert-confirmation", "numbers", "summary"],
             section_id="default-section",
         )
 
@@ -164,7 +164,12 @@ class TestPathFinder(AppContextTestCase):
                     "section_id": "default-section",
                     "list_item_id": None,
                     "status": CompletionStatus.COMPLETED,
-                    "block_ids": ["radio", "test-number-block", "dessert-block"],
+                    "block_ids": [
+                        "radio",
+                        "dessert",
+                        "dessert-confirmation",
+                        "numbers",
+                    ],
                 }
             ]
         )
@@ -214,16 +219,23 @@ class TestPathFinder(AppContextTestCase):
         schema = load_schema_from_name("test_checkbox")
         section_id = schema.get_section_id_for_block_id("mandatory-checkbox")
         expected_path = RoutingPath(
-            ["mandatory-checkbox", "non-mandatory-checkbox", "summary"],
+            [
+                "mandatory-checkbox",
+                "non-mandatory-checkbox",
+                "single-checkbox",
+                "summary",
+            ],
             section_id="default-section",
         )
 
         answer_1 = Answer(answer_id="mandatory-checkbox-answer", value="Cheese")
         answer_2 = Answer(answer_id="non-mandatory-checkbox-answer", value="deep pan")
+        answer_3 = Answer(answer_id="single-checkbox-answer", value="Estimate")
 
         answer_store = AnswerStore()
         answer_store.add_or_update(answer_1)
         answer_store.add_or_update(answer_2)
+        answer_store.add_or_update(answer_3)
 
         progress_store = ProgressStore(
             [

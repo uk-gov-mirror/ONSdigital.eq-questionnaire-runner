@@ -1,7 +1,8 @@
+from uuid import uuid4
+
+import simplejson as json
 from google.cloud import storage
-from pika import BasicProperties
-from pika import BlockingConnection
-from pika import URLParameters
+from pika import BasicProperties, BlockingConnection, URLParameters
 from pika.exceptions import AMQPError
 from structlog import get_logger
 
@@ -50,8 +51,10 @@ class RabbitMQSubmitter:
             self.rabbitmq_url = "amqp://{username}:{password}@{host}:{port}/%2F".format(
                 username=username, password=password, host=host, port=port
             )
-            self.rabbitmq_secondary_url = "amqp://{username}:{password}@{host}:{port}/%2F".format(
-                username=username, password=password, host=secondary_host, port=port
+            self.rabbitmq_secondary_url = (
+                "amqp://{username}:{password}@{host}:{port}/%2F".format(
+                    username=username, password=password, host=secondary_host, port=port
+                )
             )
         else:
             self.rabbitmq_url = "amqp://{host}:{port}/%2F".format(host=host, port=port)
@@ -141,3 +144,32 @@ class RabbitMQSubmitter:
         finally:
             if connection:
                 self._disconnect(connection)
+
+
+class GCSFeedbackSubmitter:
+    def __init__(self, bucket_name):
+        client = storage.Client()
+        self.bucket = client.get_bucket(bucket_name)
+
+    def upload(self, metadata, payload):
+        payload.update(metadata)
+        blob = self.bucket.blob(str(uuid4()))
+        blob.metadata = metadata
+        blob.upload_from_string(
+            json.dumps(payload).encode("utf8"), content_type="application/json"
+        )
+
+        return True
+
+
+class LogFeedbackSubmitter:
+    @staticmethod
+    def upload(metadata, payload):
+        logger.info("uploading feedback")
+        logger.info(
+            "feedback message",
+            metadata=metadata,
+            payload=payload,
+        )
+
+        return True

@@ -4,14 +4,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.data_model.answer_store import AnswerStore
-from app.data_model.answer import Answer
-from app.data_model.questionnaire_store import QuestionnaireStore
+from app.data_models import QuestionnaireStore
+from app.data_models.answer import Answer
+from app.data_models.answer_store import AnswerStore
+from app.questionnaire.questionnaire_schema import QuestionnaireSchema
 from app.storage.metadata_parser import (
     validate_questionnaire_claims,
     validate_runner_claims,
 )
-from app.questionnaire.questionnaire_schema import QuestionnaireSchema
 
 
 @pytest.fixture
@@ -48,6 +48,7 @@ def fake_metadata():
             "case_id": str(uuid.uuid4()),
             "form_type": "I",
             "case_type": "SPG",
+            "region_code": "GB-ENG",
             "channel": "RH",
             "display_address": "68 Abingdon Road, Goathill",
             "questionnaire_id": "0123456789000000",
@@ -61,13 +62,13 @@ def fake_metadata():
 
 
 @pytest.fixture
-def fake_collection_metadata():
-    collection_metadata = {"started_at": "2018-07-04T14:49:33.448608+00:00"}
-    return collection_metadata
+def fake_response_metadata():
+    response_metadata = {"started_at": "2018-07-04T14:49:33.448608+00:00"}
+    return response_metadata
 
 
 @pytest.fixture
-def fake_questionnaire_store(fake_metadata, fake_collection_metadata):
+def fake_questionnaire_store(fake_metadata, fake_response_metadata):
     user_answer = Answer(answer_id="GHI", value=0, list_item_id=None)
 
     storage = MagicMock()
@@ -79,7 +80,7 @@ def fake_questionnaire_store(fake_metadata, fake_collection_metadata):
     store.answer_store = AnswerStore()
     store.answer_store.add_or_update(user_answer)
     store.metadata = fake_metadata
-    store.collection_metadata = fake_collection_metadata
+    store.response_metadata = fake_response_metadata
 
     return store
 

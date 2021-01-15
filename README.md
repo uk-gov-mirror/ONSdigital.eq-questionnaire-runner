@@ -59,7 +59,7 @@ pipenv install --dev
 To update the design system templates run:
 
 ```
-make load-templates
+make load-design-system-templates
 ```
 
 Run the server inside the virtual env created by Pipenv with:
@@ -96,7 +96,7 @@ https://github.com/ONSDigital/eq-questionnaire-launcher
 docker run -e SURVEY_RUNNER_SCHEMA_URL=http://docker.for.mac.host.internal:5000 -it -p 8000:8000 onsdigital/eq-questionnaire-launcher:latest
 ```
 
-##### Storage backend
+##### Storage backends
 
 DynamoDB - https://github.com/ONSDigital/eq-docker-dynamodb
 
@@ -257,15 +257,22 @@ The following environment variables are optional:
 
 | Variable Name                      | Default | Description                                                                       |
 |------------------------------------| --------|-----------------------------------------------------------------------------------|
-| ROLLING_UPDATE_MAX_UNAVAILABLE     | 25%     | The maximum number of Pods that can be unavailable during the update process.     |
-| ROLLING_UPDATE_MAX_SURGE           | 25%     | The maximum number of Pods that can be created over the desired number of Pods.   |
-| TARGET_CPU_UTILIZATION_PERCENTAGE  |         | The average CPU utilization usage before auto scaling applies                     |
+| ROLLING_UPDATE_MAX_UNAVAILABLE     | 25%     | The maximum number of Pods that can be unavailable during the update process     |
+| ROLLING_UPDATE_MAX_SURGE           | 25%     | The maximum number of Pods that can be created over the desired number of Pods   |
+| TARGET_CPU_UTILIZATION_PERCENTAGE  |         | The average CPU utilization usage before auto scaling applies                    |
 | GOOGLE_TAG_MANAGER_ID              |         |                                                                                   |
-| GOOGLE_TAG_MANAGER_AUTH            |         |                                                                                   |
-| GOOGLE_TAG_MANAGER_PREVIEW         |         |                                                                                   |
+| GOOGLE_TAG_MANAGER_AUTH            |         |                                                                                   |                                                                              |
 | EQ_NEW_RELIC_ENABLED               | False   | Enable New Relic monitoring                                                       |
 | NEW_RELIC_LICENSE_KEY              |         | New Relic license key                                                             |
 | NEW_RELIC_APP_NAME                 |         | Display name for the application in New Relic                                     |
+| WEB_SERVER_TYPE                    | gunicorn-async | Web server type used to run the application. This also determines the worker class which can be async/threaded
+| WEB_SERVER_WORKERS                 | 7        | The number of worker processes
+| WEB_SERVER_THREADS                 | 10       | The number of worker threads per worker
+| WEB_SERVER_UWSGI_ASYNC_CORES       | 10       | The number of cores to initialise when using "uwsgi-async" web server worker type
+| DATASTORE_USE_GRPC                 | False    | Determines whether to use gRPC for Datastore. gRPC is currently only supported for threaded web servers
+
+
+
 
 To deploy the app to the cluster, run the following command:
 
@@ -301,10 +308,6 @@ The following env variables can be used
 | EQ_PROFILING                              | False                 | Enables or disables profiling (True/False) Default False/Disabled                             |
 | EQ_GOOGLE_TAG_MANAGER_ID                  |                       | The Google Tag Manger ID - Specifies the GTM account                                          |
 | EQ_GOOGLE_TAG_MANAGER_AUTH                |                       | The Google Tag Manger Auth - Ties the GTM container with the whole enviroment                 |
-| EQ_GOOGLE_TAG_MANAGER_PREVIEW             |                       | The Google Tag Manger Preview - Specifies the environment                                     |
-| EQ_DEV_MODE                               | False                 | Enable dev mode                                                                               |
-| EQ_ENABLE_FLASK_DEBUG_TOOLBAR             | False                 | Enable the flask debug toolbar                                                                |
-| EQ_ENABLE_CACHE                           | True                  | Enable caching of the schema                                                                  |
 | EQ_ENABLE_HTML_MINIFY                     | True                  | Enable minification of html                                                                   |
 | EQ_ENABLE_SECURE_SESSION_COOKIE           | True                  | Set secure session cookies                                                                    |
 | EQ_MAX_HTTP_POST_CONTENT_LENGTH           | 65536                 | The maximum http post content length that the system wil accept                               |
@@ -322,20 +325,23 @@ The following env variables can be used
 | EQ_RABBITMQ_QUEUE_NAME                    | submit_q              | The name of the submission queue                                                              |
 | EQ_SERVER_SIDE_STORAGE_USER_ID_ITERATIONS | 10000                 |                                                                                               |
 | EQ_STORAGE_BACKEND                        | datastore             |                                                                                               |
-| EQ_DATASTORE_EMULATOR_CREDENTIALS         | False                 |                                                                                               |
 | EQ_DYNAMODB_ENDPOINT                      |                       |                                                                                               |
 | EQ_REDIS_HOST                             |                       | Hostname of Redis instance used for ephemeral storage                                         |
 | EQ_REDIS_PORT                             |                       | Port number of Redis instance used for ephemeral storage                                      |
 | EQ_DYNAMODB_MAX_RETRIES                   | 5                     |                                                                                               |
 | EQ_DYNAMODB_MAX_POOL_CONNECTIONS          | 30                    |                                                                                               |
-| EQ_SUBMITTED_RESPONSES_TABLE_NAME         |                       |                                                                                               |
 | EQ_QUESTIONNAIRE_STATE_TABLE_NAME         |                       |                                                                                               |
 | EQ_SESSION_TABLE_NAME                     |                       |                                                                                               |
 | EQ_USED_JTI_CLAIM_TABLE_NAME              |                       |                                                                                               |
 | EQ_NEW_RELIC_ENABLED                      | False                 | Enable New Relic monitoring                                                                   |
 | NEW_RELIC_LICENSE_KEY                     |                       | Enable new relic monitoring by supplying a New Relic license key                              |
 | NEW_RELIC_APP_NAME                        |                       | The name to display for the application in New Relic                                          |
-| COOKIE_SETTINGS_URL                       |                       | URL for the Webstie Cookie Settings page                                                      |
+| COOKIE_SETTINGS_URL                       |                       | URL for the Website Cookie Settings page                                                      |
+| WEB_SERVER_TYPE                           |                       | Web server type used to run the application. This also determines the worker class which can be async/threaded
+| WEB_SERVER_WORKERS                        |                       | The number of worker processes
+| WEB_SERVER_THREADS                        |                       | The number of worker threads per worker
+| WEB_SERVER_UWSGI_ASYNC_CORES              |                       | The number of cores to initialise when using "uwsgi-async" web server worker type
+| DATASTORE_USE_GRPC                        | False                 | Determines whether to use gRPC for Datastore. gRPC is currently only supported for threaded web servers
 
 The following env variables can be used when running tests
 

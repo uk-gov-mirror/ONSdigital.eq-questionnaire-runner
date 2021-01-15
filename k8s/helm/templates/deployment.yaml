@@ -61,12 +61,12 @@ spec:
               value: /keys/keys.yml
             - name: EQ_RABBITMQ_ENABLED
               value: "False"
+            - name: EQ_ENABLE_HTML_MINIFY
+              value: "False"
             - name: EQ_RABBITMQ_HOST
               value: rabbit
             - name: EQ_RABBITMQ_HOST_SECONDARY
               value: rabbit
-            - name: EQ_SUBMITTED_RESPONSES_TABLE_NAME
-              value: submitted-responses
             - name: EQ_QUESTIONNAIRE_STATE_TABLE_NAME
               value: questionnaire-state
             - name: EQ_SESSION_TABLE_NAME
@@ -75,20 +75,52 @@ spec:
               value: used-jti-claim
             - name: EQ_SUBMISSION_BACKEND
               value: gcs
-            - name: GUNICORN_WORKERS
-              value: "7"
-            - name: GUNICORN_KEEP_ALIVE
+            - name: EQ_FEEDBACK_BACKEND
+              value: gcs
+            - name: EQ_PUBLISHER_BACKEND
+              value: pubsub
+            - name: EQ_FULFILMENT_TOPIC_ID
+              value: eq-fulfilment-topic
+            - name: EQ_SUBMISSION_CONFIRMATION_TOPIC_ID
+              value: eq-submission-confirmation-topic
+            - name: EQ_INDIVIDUAL_RESPONSE_LIMIT
+              value: "{{- .Values.individualResponseLimit }}"
+            - name: EQ_INDIVIDUAL_RESPONSE_POSTAL_DEADLINE
+              value: "{{- .Values.individualResponsePostalDeadline }}"
+            - name: EQ_FEEDBACK_LIMIT
+              value: "{{- .Values.feedbackLimit }}"
+            - name: WEB_SERVER_TYPE
+              value: "{{- .Values.webServer.type }}"
+            - name: WEB_SERVER_WORKERS
+              value: "{{- .Values.webServer.workers }}"
+            - name: WEB_SERVER_THREADS
+              value: "{{- .Values.webServer.threads }}"
+            - name: WEB_SERVER_UWSGI_ASYNC_CORES
+              value: "{{- .Values.webServer.uwsgiAsyncCores }}"
+            - name: DATASTORE_USE_GRPC
+              value: "{{- .Values.datastore.useGRPC }}"
+            - name: HTTP_KEEP_ALIVE
               value: "650"
             - name: EQ_GCS_SUBMISSION_BUCKET_ID
               value: "{{- .Values.submissionBucket }}"
+            - name: EQ_GCS_FEEDBACK_BUCKET_ID
+              value: "{{- .Values.feedbackBucket }}"
             - name: EQ_GOOGLE_TAG_MANAGER_ID
               value: "{{- .Values.googleTagManagerId }}"
             - name: EQ_GOOGLE_TAG_MANAGER_AUTH
               value: "{{- .Values.googleTagManagerAuth }}"
-            - name: EQ_GOOGLE_TAG_MANAGER_PREVIEW
-              value: "{{- .Values.googleTagManagerPreview }}"
             - name: COOKIE_SETTINGS_URL
               value: "{{- .Values.cookieSettingsUrl }}"
+            - name: CDN_URL
+              value: "{{- .Values.cdn.url }}"
+            - name: CDN_ASSETS_PATH
+              value: "{{- .Values.cdn.assets_path }}"
+            - name: ADDRESS_LOOKUP_API_URL
+              value: "{{- .Values.addressLookupApi.url }}"
+            - name: ADDRESS_LOOKUP_API_AUTH_ENABLED
+              value: "{{- .Values.addressLookupApi.authEnabled }}"
+            - name: ADDRESS_LOOKUP_API_AUTH_TOKEN_LEEWAY_IN_SECONDS
+              value: "{{- .Values.addressLookupApi.authTokenLeewayInSeconds }}"
             - name: EQ_REDIS_HOST
               valueFrom:
                 configMapKeyRef:
@@ -105,3 +137,5 @@ spec:
               value: "{{- .Values.newRelic.licenseKey }}"
             - name: NEW_RELIC_APP_NAME
               value: "{{- .Values.newRelic.appName }}"
+            - name: CONFIRMATION_EMAIL_LIMIT
+              value: "{{- .Values.confirmationEmailLimit }}"

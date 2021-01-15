@@ -1,25 +1,16 @@
-from tests.integration.integration_test_case import IntegrationTestCase
+from . import QuestionnaireTestCase
 
 
-class TestQuestionnaireListChangeEvaluatesSections(IntegrationTestCase):
-    def add_person(self, first_name, last_name):
-        self.post({"anyone-else": "Yes"})
-        self.post({"first-name": first_name, "last-name": last_name})
-
+class TestQuestionnaireListChangeEvaluatesSections(QuestionnaireTestCase):
     def get_link(self, rowIndex, text):
-        selector = f"tbody:nth-child({rowIndex}) td:last-child a"
+        selector = f"[data-qa='list-item-{text}-{rowIndex}-link']"
         selected = self.getHtmlSoup().select(selector)
 
         filtered = [html for html in selected if text in html.get_text()]
 
         return filtered[0].get("href")
 
-    def get_previous_link(self):
-        selector = "#top-previous"
-        selected = self.getHtmlSoup().select(selector)
-        return selected[0].get("href")
-
-    def test_wihout_primary_person(self):
+    def test_without_primary_person(self):
         self.launchSurvey("test_list_change_evaluates_sections")
 
         self.get("/questionnaire/sections/who-lives-here/")
@@ -47,11 +38,11 @@ class TestQuestionnaireListChangeEvaluatesSections(IntegrationTestCase):
         self.assertEqualUrl("/questionnaire/")
 
         self.assertInSelector(
-            "Partially completed", "tbody:nth-child(2) td:nth-child(2)"
+            "Partially completed", "[data-qa='hub-row-accommodation-section-state']"
         )
 
         self.get("questionnaire/sections/accommodation-section/")
-        self.assertEqualUrl("/questionnaire/own-or-rent/")
+        self.assertEqualUrl("/questionnaire/own-or-rent/?resume=True")
 
     def test_with_primary_person(self):
         self.launchSurvey("test_list_change_evaluates_sections")
@@ -62,7 +53,9 @@ class TestQuestionnaireListChangeEvaluatesSections(IntegrationTestCase):
         self.assertEqualUrl("/questionnaire/sections/accommodation-section/")
         self.post()
 
-        self.assertInSelector("Completed", "tbody:nth-child(2) td:nth-child(2)")
+        self.assertInSelector(
+            "Completed", "[data-qa='hub-row-accommodation-section-state']"
+        )
 
         self.get("/questionnaire/sections/who-lives-here/")
         self.assertEqualUrl("/questionnaire/primary-person-list-collector/")
@@ -72,5 +65,5 @@ class TestQuestionnaireListChangeEvaluatesSections(IntegrationTestCase):
 
         self.assertEqualUrl("/questionnaire/")
         self.assertInSelector(
-            "Partially completed", "tbody:nth-child(2) td:nth-child(2)"
+            "Partially completed", "[data-qa='hub-row-accommodation-section-state']"
         )

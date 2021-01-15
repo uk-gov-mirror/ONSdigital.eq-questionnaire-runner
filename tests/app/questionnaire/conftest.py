@@ -1,7 +1,7 @@
 # pylint: disable=redefined-outer-name
 import pytest
 
-from app.data_model.answer_store import AnswerStore
+from app.data_models.answer_store import AnswerStore
 from app.questionnaire.location import Location
 from app.questionnaire.placeholder_parser import PlaceholderParser
 
@@ -158,11 +158,6 @@ def list_collector_variant_schema():
                                 "id": "block1",
                                 "type": "ListCollector",
                                 "for_list": "people",
-                                "add_answer": {"id": "answer1", "value": "Yes"},
-                                "remove_answer": {
-                                    "id": "remove-confirmation",
-                                    "value": "Yes",
-                                },
                                 "question_variants": [
                                     {
                                         "question": {
@@ -173,6 +168,9 @@ def list_collector_variant_schema():
                                                 {
                                                     "id": "answer1",
                                                     "label": "Collector Answer 1 Variant Yes",
+                                                    "action": {
+                                                        "type": "RedirectToListAddBlock"
+                                                    },
                                                 }
                                             ],
                                         },
@@ -310,6 +308,9 @@ def list_collector_variant_schema():
                                                     {
                                                         "id": "answer1",
                                                         "label": "Answer 1 Variant Yes",
+                                                        "action": {
+                                                            "type": "RemoveListItemAndAnswers"
+                                                        },
                                                     }
                                                 ],
                                             },
@@ -576,6 +577,7 @@ def section_with_custom_summary():
             {
                 "id": "section",
                 "summary": {
+                    "show_on_completion": True,
                     "items": [
                         {
                             "type": "List",
@@ -607,7 +609,7 @@ def section_with_custom_summary():
                                 ],
                             },
                         }
-                    ]
+                    ],
                 },
                 "groups": [
                     {
