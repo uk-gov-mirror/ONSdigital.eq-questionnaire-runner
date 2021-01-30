@@ -53,11 +53,11 @@ rollingUpdate:
   maxSurge: ""
 
 cdn:
-  url: "https://cdn.eq.census-gcp.onsdigital.uk"
+  url: "https://cdn.ons.gov.uk"
   assets_path: "/design-system"
 
 addressLookupApi:
-  url: "https://whitelodge-ai-api.census-gcp.onsdigital.uk"
+  url: ""
   authEnabled: "False"
   authTokenLeewayInSeconds: 300
 

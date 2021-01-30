@@ -22,6 +22,7 @@ helm upgrade --install \
     --set-string image.repository="${DOCKER_REGISTRY}/eq-questionnaire-runner" \
     --set-string image.tag="${IMAGE_TAG}" \
     --set-string cookieSettingsUrl="${COOKIE_SETTINGS_URL}" \
+    --set-string cdn.Url="${CDN_URL}" \
     --set-string resources.requests.cpu="${REQUESTED_CPU_PER_POD}" \
     --set-string rollingUpdate.maxUnavailable="${ROLLING_UPDATE_MAX_UNAVAILABLE}" \
     --set-string rollingUpdate.maxSurge="${ROLLING_UPDATE_MAX_SURGE}" \
