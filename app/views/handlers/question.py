@@ -24,7 +24,7 @@ class Question(BlockHandler):
 
     @cached_property
     def form(self) -> QuestionnaireForm:
-        question_json = self.rendered_block["question"]
+        question_json = self.rendered_block.get("question", {})
 
         if self._form_data:
             return generate_form(
@@ -82,6 +82,10 @@ class Question(BlockHandler):
         )
 
         self._set_page_title(page_title)
+
+        if not transformed_block.get("question"):
+            return transformed_block
+
         rendered_question = self.placeholder_renderer.render(
             data_to_render=transformed_block["question"],
             list_item_id=self._current_location.list_item_id,
@@ -162,6 +166,9 @@ class Question(BlockHandler):
         )
 
     def _get_answer_action(self) -> dict | None:
+        if not self.rendered_block.get("question"):
+            return None
+
         answers = self.rendered_block["question"]["answers"]
 
         for answer in answers:

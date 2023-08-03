@@ -9,13 +9,19 @@ from app.data_models import (
     SupplementaryDataStore,
 )
 from app.data_models.metadata_proxy import MetadataProxy
-from app.questionnaire import QuestionnaireSchema
+from app.questionnaire import Location, QuestionnaireSchema
 from app.questionnaire.placeholder_renderer import PlaceholderRenderer
+from app.questionnaire.questionnaire_schema import (
+    LIST_COLLECTORS_WITH_REPEATING_BLOCKS,
+    is_list_collector_block_editable,
+)
 from app.survey_config.link import Link
-from app.utilities.types import LocationType
 from app.views.contexts.summary.block import Block
 from app.views.contexts.summary.calculated_summary_block import CalculatedSummaryBlock
 from app.views.contexts.summary.list_collector_block import ListCollectorBlock
+from app.views.contexts.summary.list_collector_content_block import (
+    ListCollectorContentBlock,
+)
 
 
 class Group:
@@ -30,7 +36,7 @@ class Group:
         metadata: MetadataProxy | None,
         response_metadata: MutableMapping,
         schema: QuestionnaireSchema,
-        location: LocationType,
+        location: Location,
         language: str,
         progress_store: ProgressStore,
         supplementary_data_store: SupplementaryDataStore,
@@ -87,7 +93,7 @@ class Group:
         metadata: MetadataProxy | None,
         response_metadata: MutableMapping,
         schema: QuestionnaireSchema,
-        location: LocationType,
+        location: Location,
         return_to: str | None,
         progress_store: ProgressStore,
         supplementary_data_store: SupplementaryDataStore,
@@ -107,7 +113,16 @@ class Group:
                 if parent_list_collector_block_id not in routing_path_block_ids:
                     continue
 
-                list_collector_block = ListCollectorBlock(
+                list_collector_block_class = (
+                    ListCollectorBlock
+                    if is_list_collector_block_editable(
+                        # Type ignore: return types differ
+                        schema.get_block(parent_list_collector_block_id)  # type: ignore
+                    )
+                    else ListCollectorContentBlock
+                )
+
+                list_collector_block = list_collector_block_class(
                     routing_path_block_ids=routing_path_block_ids,
                     answer_store=answer_store,
                     list_store=list_store,
@@ -174,7 +189,7 @@ class Group:
                     ]
                 )
 
-            elif block["type"] == "ListCollector":
+            elif block["type"] in LIST_COLLECTORS_WITH_REPEATING_BLOCKS:
                 section: ImmutableDict | None = schema.get_section(location.section_id)
 
                 summary_item: ImmutableDict | None
@@ -183,7 +198,12 @@ class Group:
                     section_id=section["id"],  # type: ignore
                     list_name=block["for_list"],
                 ):
-                    list_collector_block = ListCollectorBlock(
+                    list_collector_block_class = (
+                        ListCollectorBlock
+                        if is_list_collector_block_editable(block)
+                        else ListCollectorContentBlock
+                    )
+                    list_collector_block = list_collector_block_class(
                         routing_path_block_ids=routing_path_block_ids,
                         answer_store=answer_store,
                         list_store=list_store,
@@ -195,14 +215,20 @@ class Group:
                         language=language,
                         return_to=return_to,
                         supplementary_data_store=supplementary_data_store,
+                        return_to_block_id=return_to_block_id,
                     )
-
-                    list_summary_element = list_collector_block.list_summary_element(
-                        summary_item
+                    # Type ignore: Checking base block for a method instead of list collector block
+                    list_summary_element = (
+                        list_collector_block.list_summary_element(  # type:ignore
+                            summary_item
+                        )
                     )
                     blocks.extend([list_summary_element])
 
-                    if not view_submitted_response:
+                    if (
+                        not view_submitted_response
+                        and is_list_collector_block_editable(block)
+                    ):
                         self.links["add_link"] = Link(
                             target="_self",
                             text=list_summary_element["add_link_text"],

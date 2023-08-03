@@ -18,6 +18,8 @@ from app.utilities.mappings import get_flattened_mapping_values, get_mappings_wi
 
 DEFAULT_LANGUAGE_CODE = "en"
 
+LIST_COLLECTORS_WITH_REPEATING_BLOCKS = {"ListCollector", "ListCollectorContent"}
+
 LIST_COLLECTOR_CHILDREN = [
     "ListAddQuestion",
     "ListEditQuestion",
@@ -297,11 +299,12 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
                 self._parent_id_map[block_id] = group["id"]
 
                 blocks[block_id] = block
-                if block["type"] in (
+                if block["type"] in {
                     "ListCollector",
+                    "ListCollectorContent",
                     "PrimaryPersonListCollector",
                     "RelationshipCollector",
-                ):
+                }:
                     for nested_block_name in [
                         "add_block",
                         "edit_block",
@@ -701,7 +704,10 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
 
     def get_remove_block_id_for_list(self, list_name: str) -> str | None:
         for block in self.get_blocks():
-            if block["type"] == "ListCollector" and block["for_list"] == list_name:
+            if (
+                is_list_collector_block_editable(block)
+                and block["for_list"] == list_name
+            ):
                 remove_block_id: str = block["remove_block"]["id"]
                 return remove_block_id
 
@@ -909,12 +915,16 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
     def get_list_collectors_for_list(
         section: Mapping, for_list: str, primary: bool = False
     ) -> Generator[ImmutableDict, None, None]:
-        collector_type = "PrimaryPersonListCollector" if primary else "ListCollector"
+        collector_type = (
+            {"PrimaryPersonListCollector"}
+            if primary
+            else {"ListCollectorContent", "ListCollector"}
+        )
 
         return (
             block
             for block in QuestionnaireSchema.get_blocks_for_section(section)
-            if block["type"] == collector_type and block["for_list"] == for_list
+            if block["type"] in collector_type and block["for_list"] == for_list
         )
 
     @staticmethod
@@ -1107,7 +1117,7 @@ class QuestionnaireSchema:  # pylint: disable=too-many-public-methods
 
         if (
             parent_block
-            and parent_block["type"] == "ListCollector"
+            and parent_block["type"] in LIST_COLLECTORS_WITH_REPEATING_BLOCKS
             and block_id not in self.list_collector_repeating_block_ids
         ):
             return parent_block
@@ -1466,3 +1476,7 @@ def get_calculation_block_ids_for_grand_calculated_summary(
         calculation_block=grand_calculated_summary_block,
         source_type="calculated_summary",
     )
+
+
+def is_list_collector_block_editable(block: Mapping) -> bool:
+    return bool(block["type"] == "ListCollector")

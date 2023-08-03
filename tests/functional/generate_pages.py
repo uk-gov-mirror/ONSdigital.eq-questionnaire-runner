@@ -840,6 +840,7 @@ def process_block(
                 relative_require,
                 page_filename=f'{block["id"]}-{list_operation}.page.js',
             )
+    if block["type"] in {"ListCollector", "ListCollectorContent"}:
         for repeating_block in block.get("repeating_blocks", []):
             process_block(
                 repeating_block,
