@@ -1,3 +1,4 @@
+// Example with TS linter in the config
 {
   "env": {
     "node": true,
@@ -9,6 +10,7 @@
     "eslint:recommended",
     "plugin:import/recommended"
   ],
+  "parser": "@typescript-eslint/parser",    // Override native eslint 'espree' parser for JS
   "globals": {
     "$": true,
     "$$": true,
@@ -19,12 +21,15 @@
     "ecmaVersion": 11,
     "ecmaFeatures": {
       "modules": true
-    }
+    },
+      "project": ["./jsconfig.json"]    // Expects a TS config here really, but for sake of spike use the JS one in project root
   },
   "plugins": [
-    "json"
+    "json",
+    "@typescript-eslint"    // Needs the plugin to work
   ],
   "rules": {
+    "@typescript-eslint/await-thenable": "error",   // Add the TS rule
     "no-loss-of-precision": 0,
     "no-nonoctal-decimal-escape": 0,
     "no-unsafe-optional-chaining": 0,
