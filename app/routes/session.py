@@ -73,6 +73,7 @@ def login() -> Response:
         cookie_session.clear()
 
     decrypted_token = decrypt_token(request.args.get("token"))
+    decrypted_token["cir_instrument_id"] = "gadfjkfgdskjgfkhds"
 
     validate_jti(decrypted_token)
 
