@@ -74,7 +74,7 @@ def login() -> Response:
 
     decrypted_token = decrypt_token(request.args.get("token"))
     decrypted_token["cir_instrument_id"] = "6770b2dd-11bd-eba7-b65c-1df803f6ce4c"
-    del decrypted_token["schema_name"]
+    # del decrypted_token["schema_name"]
 
     validate_jti(decrypted_token)
 
