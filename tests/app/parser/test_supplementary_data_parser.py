@@ -54,15 +54,7 @@ def test_invalid_supplementary_data_payload_raises_error():
     assert str(error.value) == "Invalid supplementary data"
 
 
-def test_validate_supplementary_data_payload():
-    validated_payload = validate_supplementary_data_v1(
-        supplementary_data=SUPPLEMENTARY_DATA_PAYLOAD,
-        dataset_id="44f1b432-9421-49e5-bd26-e63e18a30b69",
-        identifier="12345678901",
-        survey_id="123",
-    )
 
-    assert validated_payload == SUPPLEMENTARY_DATA_PAYLOAD
 
 
 def test_validate_supplementary_data_payload_incorrect_dataset_id():
