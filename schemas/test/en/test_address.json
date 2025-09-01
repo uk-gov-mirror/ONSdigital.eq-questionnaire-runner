@@ -38,7 +38,7 @@
                     "title": "List",
                     "blocks": [
                         {
-                            "type": "Question",
+                            "type": "Question1",
                             "id": "address-block-mandatory",
                             "question": {
                                 "type": "General",
